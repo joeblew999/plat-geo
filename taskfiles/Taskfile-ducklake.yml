@@ -1,0 +1,142 @@
+version: "3"
+
+vars:
+  BIN_DIR: '{{.BIN_DIR | default ".bin"}}'
+  DATA_DIR: '{{.DATA_DIR | default ".data"}}'
+  DUCKDB: '{{.BIN_DIR | default ".bin"}}/duckdb'
+  DUCKLAKE_CATALOG: '{{.DUCKLAKE_CATALOG | default "geo_catalog"}}'
+
+tasks:
+  install:
+    desc: Install DuckLake extension
+    cmds:
+      - '{{.DUCKDB}} -c "INSTALL ducklake;"'
+
+  init:
+    desc: Initialize DuckLake catalog database
+    vars:
+      CATALOG_PATH: '{{.DATA_DIR}}/{{.DUCKLAKE_CATALOG}}.duckdb'
+    cmds:
+      - |
+        {{.DUCKDB}} -c "
+          LOAD ducklake;
+          ATTACH 'ducklake:{{.CATALOG_PATH}}' AS {{.DUCKLAKE_CATALOG}};
+        "
+      - echo "DuckLake catalog initialized at {{.CATALOG_PATH}}"
+
+  attach:
+    desc: Attach DuckLake catalog in shell
+    vars:
+      CATALOG_PATH: '{{.DATA_DIR}}/{{.DUCKLAKE_CATALOG}}.duckdb'
+    cmds:
+      - |
+        {{.DUCKDB}} -c "
+          LOAD ducklake;
+          ATTACH 'ducklake:{{.CATALOG_PATH}}' AS {{.DUCKLAKE_CATALOG}};
+          USE {{.DUCKLAKE_CATALOG}};
+        " -cmd ".mode box"
+
+  shell:
+    desc: Open shell with DuckLake catalog attached
+    vars:
+      CATALOG_PATH: '{{.DATA_DIR}}/{{.DUCKLAKE_CATALOG}}.duckdb'
+    cmds:
+      - |
+        {{.DUCKDB}} -init <(echo "
+          LOAD ducklake;
+          ATTACH 'ducklake:{{.CATALOG_PATH}}' AS {{.DUCKLAKE_CATALOG}};
+          USE {{.DUCKLAKE_CATALOG}};
+        ")
+
+  create:schema:
+    desc: Create a schema in DuckLake (SCHEMA=name)
+    vars:
+      CATALOG_PATH: '{{.DATA_DIR}}/{{.DUCKLAKE_CATALOG}}.duckdb'
+      SCHEMA: '{{.SCHEMA | default "main"}}'
+    cmds:
+      - |
+        {{.DUCKDB}} -c "
+          LOAD ducklake;
+          ATTACH 'ducklake:{{.CATALOG_PATH}}' AS {{.DUCKLAKE_CATALOG}};
+          CREATE SCHEMA IF NOT EXISTS {{.DUCKLAKE_CATALOG}}.{{.SCHEMA}};
+        "
+
+  ingest:parquet:
+    desc: Ingest parquet into DuckLake table (FILE=path TABLE=name)
+    vars:
+      CATALOG_PATH: '{{.DATA_DIR}}/{{.DUCKLAKE_CATALOG}}.duckdb'
+      FILE: '{{.FILE}}'
+      TABLE: '{{.TABLE | default "data"}}'
+      SCHEMA: '{{.SCHEMA | default "main"}}'
+    cmds:
+      - |
+        {{.DUCKDB}} -c "
+          LOAD ducklake;
+          ATTACH 'ducklake:{{.CATALOG_PATH}}' AS {{.DUCKLAKE_CATALOG}};
+          CREATE OR REPLACE TABLE {{.DUCKLAKE_CATALOG}}.{{.SCHEMA}}.{{.TABLE}} AS
+            SELECT * FROM '{{.FILE}}';
+        "
+
+  snapshots:
+    desc: List table snapshots
+    vars:
+      CATALOG_PATH: '{{.DATA_DIR}}/{{.DUCKLAKE_CATALOG}}.duckdb'
+      TABLE: '{{.TABLE}}'
+    cmds:
+      - |
+        {{.DUCKDB}} -c "
+          LOAD ducklake;
+          ATTACH 'ducklake:{{.CATALOG_PATH}}' AS {{.DUCKLAKE_CATALOG}};
+          SELECT * FROM ducklake_snapshots('{{.DUCKLAKE_CATALOG}}');
+        "
+
+  tables:
+    desc: List all tables in catalog
+    vars:
+      CATALOG_PATH: '{{.DATA_DIR}}/{{.DUCKLAKE_CATALOG}}.duckdb'
+    cmds:
+      - |
+        {{.DUCKDB}} -c "
+          LOAD ducklake;
+          ATTACH 'ducklake:{{.CATALOG_PATH}}' AS {{.DUCKLAKE_CATALOG}};
+          SHOW ALL TABLES;
+        "
+
+  table:info:
+    desc: Show table info (TABLE=name)
+    vars:
+      CATALOG_PATH: '{{.DATA_DIR}}/{{.DUCKLAKE_CATALOG}}.duckdb'
+      TABLE: '{{.TABLE}}'
+    cmds:
+      - |
+        {{.DUCKDB}} -c "
+          LOAD ducklake;
+          ATTACH 'ducklake:{{.CATALOG_PATH}}' AS {{.DUCKLAKE_CATALOG}};
+          SELECT * FROM ducklake_table_info('{{.DUCKLAKE_CATALOG}}');
+        "
+
+  files:
+    desc: List data files for a table (TABLE=name)
+    vars:
+      CATALOG_PATH: '{{.DATA_DIR}}/{{.DUCKLAKE_CATALOG}}.duckdb'
+      TABLE: '{{.TABLE}}'
+    cmds:
+      - |
+        {{.DUCKDB}} -c "
+          LOAD ducklake;
+          ATTACH 'ducklake:{{.CATALOG_PATH}}' AS {{.DUCKLAKE_CATALOG}};
+          SELECT * FROM ducklake_list_files('{{.DUCKLAKE_CATALOG}}', '{{.TABLE}}');
+        "
+
+  info:
+    desc: Show DuckLake catalog info
+    vars:
+      CATALOG_PATH: '{{.DATA_DIR}}/{{.DUCKLAKE_CATALOG}}.duckdb'
+    cmds:
+      - |
+        {{.DUCKDB}} -c "
+          LOAD ducklake;
+          ATTACH 'ducklake:{{.CATALOG_PATH}}' AS {{.DUCKLAKE_CATALOG}};
+          PRAGMA database_list;
+          SELECT * FROM ducklake_options('{{.DUCKLAKE_CATALOG}}');
+        "

@@ -1,0 +1,55 @@
+version: "0.5"
+
+# Delegate all implementation details to Taskfiles
+# Process Compose only orchestrates: process dependencies and restart policies
+# Commands call task <name>:run (execute binary), probes call task <name>:health (returns immediately)
+
+# Load environment variables from root .env file
+env_file:
+  - .env
+
+processes:
+  geo:
+    command: task geo:run
+    working_dir: .
+    shutdown:
+      signal: 15
+      timeout_seconds: 10
+    availability:
+      restart: on_failure
+      backoff_seconds: 5
+    readiness_probe:
+      exec:
+        command: task geo:health
+      initial_delay_seconds: 3
+      period_seconds: 5
+
+  duckdb-ui:
+    command: task duckdb:ui:run
+    working_dir: .
+    shutdown:
+      signal: 15
+      timeout_seconds: 10
+    availability:
+      restart: on_failure
+      backoff_seconds: 5
+    readiness_probe:
+      exec:
+        command: task duckdb:ui:health
+      initial_delay_seconds: 5
+      period_seconds: 10
+
+  nornicdb:
+    command: task nornicdb:run
+    working_dir: .
+    shutdown:
+      signal: 15
+      timeout_seconds: 30
+    availability:
+      restart: on_failure
+      backoff_seconds: 10
+    readiness_probe:
+      exec:
+        command: task nornicdb:health
+      initial_delay_seconds: 10
+      period_seconds: 15

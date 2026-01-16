@@ -1,0 +1,58 @@
+apiVersion: xplat/v1
+kind: Package
+
+name: plat-geo
+version: 0.1.0
+description: Geographical system for maps and routing with GeoParquet and PMTiles support
+author: joeblew999
+license: MIT
+
+# Binary distribution
+binary:
+  name: geo
+  source:
+    go: github.com/joeblew999/plat-geo/cmd/geo
+
+# Taskfile remote include configuration
+taskfile:
+  path: Taskfile.yml
+  namespace: geo
+
+# Process configuration for the geo server
+process:
+  command: task geo:run
+  port: 8086
+  health_path: /health
+  readiness:
+    initial_delay: 3
+    period: 5
+
+# Environment variables
+env:
+  required:
+    - name: GEO_DATA_DIR
+      description: Directory containing GeoParquet and PMTiles data files
+  optional:
+    - name: GEO_PORT
+      description: Port for the geo server
+      default: "8086"
+    - name: GEO_HOST
+      description: Host address to bind
+      default: "0.0.0.0"
+    - name: GEO_LOG_LEVEL
+      description: Logging level (debug, info, warn, error)
+      default: "info"
+
+# Dependencies
+dependencies:
+  build:
+    - go
+  runtime: []
+
+# Gitignore patterns
+gitignore:
+  patterns:
+    - .bin/
+    - .data/
+    - "*.pmtiles"
+    - "*.parquet"

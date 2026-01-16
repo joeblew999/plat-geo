@@ -1,0 +1,124 @@
+version: "3"
+
+vars:
+  BINARY: geo
+  BIN_DIR: '{{.BIN_DIR | default ".bin"}}'
+  DATA_DIR: '{{.DATA_DIR | default ".data"}}'
+  MODULE: github.com/joeblew999/plat-geo
+
+includes:
+  gen:
+    taskfile: Taskfile.generated.yml
+    optional: true
+  duckdb:
+    taskfile: taskfiles/Taskfile-duckdb.yml
+    optional: true
+  ducklake:
+    taskfile: taskfiles/Taskfile-ducklake.yml
+    optional: true
+  nornicdb:
+    taskfile: taskfiles/Taskfile-nornicdb.yml
+    optional: true
+
+tasks:
+  default:
+    desc: Show available tasks
+    cmds:
+      - task --list
+
+  # Development
+  dev:
+    desc: Run in development mode with hot reload
+    cmds:
+      - go run ./cmd/{{.BINARY}} serve
+
+  # Process-compose compatible tasks
+  run:
+    desc: Run the geo server (for process-compose)
+    cmds:
+      - ./{{.BIN_DIR}}/{{.BINARY}} serve
+
+  health:
+    desc: Health check (for process-compose readiness probe)
+    cmds:
+      - curl -sf http://localhost:${GEO_PORT:-8086}/health > /dev/null
+
+  # Build
+  build:
+    desc: Build the binary
+    cmds:
+      - mkdir -p {{.BIN_DIR}}
+      - go build -o {{.BIN_DIR}}/{{.BINARY}} ./cmd/{{.BINARY}}
+
+  build:release:
+    desc: Build optimized release binary
+    cmds:
+      - mkdir -p {{.BIN_DIR}}
+      - CGO_ENABLED=0 go build -ldflags="-s -w" -o {{.BIN_DIR}}/{{.BINARY}} ./cmd/{{.BINARY}}
+
+  # Testing
+  test:
+    desc: Run tests
+    cmds:
+      - go test -v ./...
+
+  test:coverage:
+    desc: Run tests with coverage
+    cmds:
+      - go test -coverprofile=coverage.out ./...
+      - go tool cover -html=coverage.out -o coverage.html
+
+  # Code quality
+  lint:
+    desc: Run linter
+    cmds:
+      - golangci-lint run
+
+  fmt:
+    desc: Format code
+    cmds:
+      - go fmt ./...
+      - goimports -w .
+
+  # Dependencies
+  deps:
+    desc: Download dependencies
+    cmds:
+      - go mod download
+
+  deps:tidy:
+    desc: Tidy dependencies
+    cmds:
+      - go mod tidy
+
+  deps:update:
+    desc: Update all dependencies
+    cmds:
+      - go get -u ./...
+      - go mod tidy
+
+  # Generation
+  generate:
+    desc: Run go generate
+    cmds:
+      - go generate ./...
+
+  # Clean
+  clean:
+    desc: Clean build artifacts
+    cmds:
+      - rm -rf {{.BIN_DIR}}
+      - rm -f coverage.out coverage.html
+
+  # Data management
+  data:init:
+    desc: Initialize data directory
+    cmds:
+      - mkdir -p {{.DATA_DIR}}/pmtiles
+      - mkdir -p {{.DATA_DIR}}/parquet
+
+  # Install
+  install:
+    desc: Install binary to GOPATH/bin
+    cmds:
+      - go install ./cmd/{{.BINARY}}

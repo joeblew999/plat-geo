@@ -1,0 +1,39 @@
+# xplat generated
+.data/
+*.pmtiles
+*.parquet
+
+# Binary
+.bin/
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Coverage
+coverage.out
+coverage.html
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Generated
+Taskfile.generated.yml
+process-compose.generated.yaml
+
+# Environment
+.env
+.env.local

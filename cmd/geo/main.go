@@ -1,0 +1,75 @@
+package main
+
+import (
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+
+	"github.com/joeblew999/plat-geo/internal/server"
+)
+
+func main() {
+	if len(os.Args) < 2 {
+		printUsage()
+		os.Exit(1)
+	}
+
+	switch os.Args[1] {
+	case "serve":
+		runServer()
+	case "version":
+		fmt.Println("geo v0.1.0")
+	case "help", "-h", "--help":
+		printUsage()
+	default:
+		fmt.Printf("Unknown command: %s\n", os.Args[1])
+		printUsage()
+		os.Exit(1)
+	}
+}
+
+func printUsage() {
+	fmt.Println(`geo - geographical system for maps and routing
+
+Usage:
+  geo <command>
+
+Commands:
+  serve     Start the geo server
+  version   Print version information
+  help      Show this help message
+
+Environment:
+  GEO_PORT       Port to listen on (default: 8086)
+  GEO_HOST       Host to bind to (default: 0.0.0.0)
+  GEO_DATA_DIR   Directory for geo data files (required)
+  GEO_LOG_LEVEL  Log level: debug, info, warn, error (default: info)`)
+}
+
+func runServer() {
+	port := getEnv("GEO_PORT", "8086")
+	host := getEnv("GEO_HOST", "0.0.0.0")
+	dataDir := getEnv("GEO_DATA_DIR", ".data")
+
+	srv := server.New(server.Config{
+		Host:    host,
+		Port:    port,
+		DataDir: dataDir,
+	})
+
+	addr := fmt.Sprintf("%s:%s", host, port)
+	log.Printf("Starting geo server on %s", addr)
+	log.Printf("Data directory: %s", dataDir)
+
+	if err := http.ListenAndServe(addr, srv); err != nil {
+		log.Fatalf("Server error: %v", err)
+	}
+}
+
+func getEnv(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
+}

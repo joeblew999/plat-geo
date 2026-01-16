@@ -1,0 +1,158 @@
+version: "3"
+
+vars:
+  DATA_DIR: '{{.DATA_DIR | default ".data"}}'
+  NORNICDB_IMAGE: '{{.NORNICDB_IMAGE | default "timothyswt/nornicdb-arm64-metal-bge-heimdall:latest"}}'
+  NORNICDB_CONTAINER: '{{.NORNICDB_CONTAINER | default "nornicdb"}}'
+  NORNICDB_HTTP_PORT: '{{.NORNICDB_HTTP_PORT | default "7474"}}'
+  NORNICDB_BOLT_PORT: '{{.NORNICDB_BOLT_PORT | default "7687"}}'
+
+tasks:
+  pull:
+    desc: Pull NornicDB Docker image
+    cmds:
+      - docker pull {{.NORNICDB_IMAGE}}
+
+  run:
+    desc: Start NornicDB (for process-compose)
+    cmds:
+      - |
+        docker run --rm \
+          --name {{.NORNICDB_CONTAINER}} \
+          -p {{.NORNICDB_HTTP_PORT}}:7474 \
+          -p {{.NORNICDB_BOLT_PORT}}:7687 \
+          -v {{.DATA_DIR}}/nornicdb:/data \
+          {{.NORNICDB_IMAGE}}
+
+  start:
+    desc: Start NornicDB in background
+    cmds:
+      - mkdir -p {{.DATA_DIR}}/nornicdb
+      - |
+        docker run -d \
+          --name {{.NORNICDB_CONTAINER}} \
+          -p {{.NORNICDB_HTTP_PORT}}:7474 \
+          -p {{.NORNICDB_BOLT_PORT}}:7687 \
+          -v {{.DATA_DIR}}/nornicdb:/data \
+          {{.NORNICDB_IMAGE}}
+      - echo "NornicDB started at http://localhost:{{.NORNICDB_HTTP_PORT}}"
+
+  stop:
+    desc: Stop NornicDB container
+    cmds:
+      - docker stop {{.NORNICDB_CONTAINER}} || true
+      - docker rm {{.NORNICDB_CONTAINER}} || true
+
+  restart:
+    desc: Restart NornicDB
+    cmds:
+      - task: stop
+      - task: start
+
+  health:
+    desc: Health check for NornicDB (for process-compose)
+    cmds:
+      - curl -sf http://localhost:{{.NORNICDB_HTTP_PORT}}/health > /dev/null
+
+  status:
+    desc: Show NornicDB container status
+    cmds:
+      - docker ps -f name={{.NORNICDB_CONTAINER}} --format "table {{`{{.Names}}`}}\t{{`{{.Status}}`}}\t{{`{{.Ports}}`}}"
+
+  logs:
+    desc: Show NornicDB logs
+    cmds:
+      - docker logs {{.NORNICDB_CONTAINER}} {{.CLI_ARGS}}
+
+  logs:follow:
+    desc: Follow NornicDB logs
+    cmds:
+      - docker logs -f {{.NORNICDB_CONTAINER}}
+
+  shell:
+    desc: Open shell in NornicDB container
+    cmds:
+      - docker exec -it {{.NORNICDB_CONTAINER}} /bin/sh
+
+  # Cypher query helpers
+  cypher:
+    desc: Run a Cypher query (QUERY="MATCH (n) RETURN n LIMIT 5")
+    vars:
+      QUERY: '{{.QUERY}}'
+    cmds:
+      - |
+        curl -s -X POST http://localhost:{{.NORNICDB_HTTP_PORT}}/db/nornic/tx/commit \
+          -H "Content-Type: application/json" \
+          -d '{"statements": [{"statement": "{{.QUERY}}"}]}' | jq .
+
+  info:
+    desc: Show database info
+    cmds:
+      - |
+        curl -s -X POST http://localhost:{{.NORNICDB_HTTP_PORT}}/db/nornic/tx/commit \
+          -H "Content-Type: application/json" \
+          -d '{"statements": [{"statement": "CALL dbms.components() YIELD name, versions RETURN name, versions"}]}' | jq .
+
+  stats:
+    desc: Show node/relationship counts
+    cmds:
+      - |
+        curl -s -X POST http://localhost:{{.NORNICDB_HTTP_PORT}}/db/nornic/tx/commit \
+          -H "Content-Type: application/json" \
+          -d '{"statements": [{"statement": "MATCH (n) RETURN count(n) as nodes"}, {"statement": "MATCH ()-[r]->() RETURN count(r) as relationships"}]}' | jq .
+
+  # Vector search
+  search:
+    desc: Vector search (QUERY="search term" LIMIT=10)
+    vars:
+      QUERY: '{{.QUERY}}'
+      LIMIT: '{{.LIMIT | default "10"}}'
+    cmds:
+      - |
+        curl -s -X POST http://localhost:{{.NORNICDB_HTTP_PORT}}/nornicdb/search \
+          -H "Content-Type: application/json" \
+          -d '{"query": "{{.QUERY}}", "limit": {{.LIMIT}}}' | jq .
+
+  # Data management
+  backup:
+    desc: Backup NornicDB data
+    cmds:
+      - mkdir -p {{.DATA_DIR}}/backups
+      - |
+        docker exec {{.NORNICDB_CONTAINER}} tar -czf - /data | \
+          cat > {{.DATA_DIR}}/backups/nornicdb-$(date +%Y%m%d-%H%M%S).tar.gz
+      - echo "Backup saved to {{.DATA_DIR}}/backups/"
+
+  clean:
+    desc: Remove NornicDB data (DANGEROUS)
+    prompt: This will delete all NornicDB data. Continue?
+    cmds:
+      - task: stop
+      - rm -rf {{.DATA_DIR}}/nornicdb
+      - echo "NornicDB data removed"
+
+  # Image variants
+  pull:metal:
+    desc: Pull ARM64 Metal image (Apple Silicon, minimal)
+    cmds:
+      - docker pull timothyswt/nornicdb-arm64-metal:latest
+
+  pull:metal-bge:
+    desc: Pull ARM64 Metal + BGE image (with embeddings)
+    cmds:
+      - docker pull timothyswt/nornicdb-arm64-metal-bge:latest
+
+  pull:metal-heimdall:
+    desc: Pull ARM64 Metal + BGE + Heimdall image (full)
+    cmds:
+      - docker pull timothyswt/nornicdb-arm64-metal-bge-heimdall:latest
+
+  pull:cuda:
+    desc: Pull AMD64 CUDA image (NVIDIA GPU)
+    cmds:
+      - docker pull timothyswt/nornicdb-amd64-cuda-bge:latest
+
+  pull:cpu:
+    desc: Pull AMD64 CPU image (no GPU)
+    cmds:
+      - docker pull timothyswt/nornicdb-amd64-cpu:latest
