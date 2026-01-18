@@ -7,7 +7,7 @@ Geospatial data platform with PMTiles and GeoParquet.
 ## Quick Start
 
 ```bash
-task dev
+xplat task dev
 ```
 
 Open http://localhost:8086/editor
@@ -33,9 +33,9 @@ Open http://localhost:8086/editor
 ## Commands
 
 ```bash
-task dev      # Run dev server (hot reload)
-task build    # Build binary
-task test     # Run tests
+xplat task dev      # Run dev server (hot reload)
+xplat task build    # Build binary
+xplat task test     # Run tests
 ```
 
 ## API Docs
