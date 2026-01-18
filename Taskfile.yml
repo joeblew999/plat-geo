@@ -109,9 +109,10 @@ tasks:
   # DATA
   # ===================
   data:init:
-    desc: Initialize data directory
+    desc: Initialize data directory with sample files
     cmds:
       - mkdir -p {{.DATA_DIR}}/tiles {{.DATA_DIR}}/sources
+      - cp -n testdata/*.geojson {{.DATA_DIR}}/sources/ 2>/dev/null || true
 
   # ===================
   # INSTALL

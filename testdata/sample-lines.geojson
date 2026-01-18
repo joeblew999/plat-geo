@@ -1,0 +1,27 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [-122.4194, 37.7749],
+          [-118.2437, 34.0522]
+        ]
+      },
+      "properties": { "name": "SF to LA", "distance_km": 559 }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [-118.2437, 34.0522],
+          [-73.9857, 40.7484]
+        ]
+      },
+      "properties": { "name": "LA to NYC", "distance_km": 3940 }
+    }
+  ]
+}
