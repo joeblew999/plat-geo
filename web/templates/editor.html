@@ -316,7 +316,7 @@
         }
     </style>
 </head>
-<body data-signals="{_activeTab: 'layers', _editingLayer: false, newlayername: '', newlayerfile: '', newlayerpmtileslayer: 'default', newlayergeomtype: 'polygon', newlayerfill: '#3388ff', newlayerstroke: '#2266cc', newlayeropacity: 0.7, newlayervisible: true, availableTiles: [], availableSources: [], tileProgress: 0, tileStatus: '', error: '', success: ''}">
+<body data-signals="{_activeTab: 'layers', _editingLayer: false, newlayername: '', newlayerfile: '', newlayerpmtileslayer: 'default', newlayergeomtype: 'polygon', newlayerfill: '#3388ff', newlayerstroke: '#2266cc', newlayeropacity: 0.7, newlayervisible: true, availableTiles: [], availableSources: [], tileProgress: 0, tileStatus: '', error: '', success: '', sourcefile: '', outputname: '', layername: 'default', minzoom: 0, maxzoom: 14}">
     <div class="sidebar">
         <div class="sidebar-header">
             <h1>plat-geo Editor</h1>
@@ -351,7 +351,8 @@
 
             <!-- Layers Tab -->
             <div data-show="$_activeTab === 'layers'">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;"
+                     data-init="@get('/api/v1/editor/tiles/select')">
                     <h2 style="font-size: 16px;">Map Layers</h2>
                     <button class="btn btn-primary btn-sm"
                             data-on:click="$_editingLayer = 'new'">
@@ -360,8 +361,7 @@
                 </div>
 
                 <!-- New/Edit Layer Form -->
-                <div data-show="$_editingLayer" class="layer-card" style="border-color: #0066cc;"
-                     data-on:load="@get('/api/v1/editor/tiles/list')">
+                <div data-show="$_editingLayer" class="layer-card" style="border-color: #0066cc;">
                     <form data-on:submit__prevent="@post('/api/v1/editor/layers')">
                         <div class="form-group">
                             <label>Layer Name</label>
@@ -454,7 +454,7 @@
             </div>
 
             <!-- Tiles Tab -->
-            <div data-show="$_activeTab === 'tiles'" data-on:load="@get('/api/v1/editor/sources/list')">
+            <div data-show="$_activeTab === 'tiles'">
                 <h2 style="font-size: 16px; margin-bottom: 16px;">PMTiles Management</h2>
 
                 <!-- Available Tiles -->
@@ -470,9 +470,9 @@
                         <h3 style="font-size: 14px; margin-bottom: 12px;">Generate PMTiles from GeoJSON</h3>
 
                         <form data-on:submit__prevent="@post('/api/v1/editor/tiles/generate')">
-                            <div class="form-group" data-init="@get('/api/v1/editor/sources/list')">
+                            <div class="form-group">
                                 <label>Source File</label>
-                                <select data-bind:tilesourcefile id="source-select">
+                                <select data-bind:sourcefile id="source-select">
                                     <option value="">-- Select a source file --</option>
                                 </select>
                                 <small>Select from uploaded GeoJSON or GeoParquet files</small>
@@ -481,7 +481,7 @@
                             <div class="form-group">
                                 <label>Output PMTiles Name</label>
                                 <input type="text"
-                                       data-bind:tileoutputname
+                                       data-bind:outputname
                                        placeholder="output.pmtiles"
                                        required>
                             </div>
@@ -489,7 +489,7 @@
                             <div class="form-group">
                                 <label>Layer Name</label>
                                 <input type="text"
-                                       data-bind:tilelayername
+                                       data-bind:layername
                                        value="default"
                                        placeholder="default">
                             </div>
@@ -498,7 +498,7 @@
                                 <div class="form-group" style="flex: 1;">
                                     <label>Min Zoom</label>
                                     <input type="number"
-                                           data-bind:tileminzoom
+                                           data-bind:minzoom
                                            value="0"
                                            min="0"
                                            max="22">
@@ -506,7 +506,7 @@
                                 <div class="form-group" style="flex: 1;">
                                     <label>Max Zoom</label>
                                     <input type="number"
-                                           data-bind:tilemaxzoom
+                                           data-bind:maxzoom
                                            value="14"
                                            min="0"
                                            max="22">

@@ -2,14 +2,11 @@ version: "3"
 
 vars:
   BINARY: geo
-  BIN_DIR: '{{.BIN_DIR | default ".bin"}}'
-  DATA_DIR: '{{.DATA_DIR | default ".data"}}'
+  BIN_DIR: .bin
+  DATA_DIR: .data
   MODULE: github.com/joeblew999/plat-geo
 
 includes:
-  gen:
-    taskfile: Taskfile.generated.yml
-    optional: true
   huma:
     taskfile: taskfiles/Taskfile-huma.yml
     optional: true
@@ -35,24 +32,17 @@ tasks:
     cmds:
       - task --list
 
-  # Development
+  # ===================
+  # DEVELOPMENT - ONE WAY: task dev
+  # ===================
   dev:
-    desc: Run in development mode with hot reload
+    desc: Run dev server with hot reload and codegen
     cmds:
-      - go run ./cmd/{{.BINARY}} serve
+      - air
 
-  # Process-compose compatible tasks
-  run:
-    desc: Run the geo server (for process-compose)
-    cmds:
-      - ./{{.BIN_DIR}}/{{.BINARY}} serve
-
-  health:
-    desc: Health check (for process-compose readiness probe)
-    cmds:
-      - curl -sf http://localhost:${GEO_PORT:-8086}/health > /dev/null
-
-  # Build
+  # ===================
+  # BUILD
+  # ===================
   build:
     desc: Build the binary
     cmds:
@@ -65,7 +55,9 @@ tasks:
       - mkdir -p {{.BIN_DIR}}
       - CGO_ENABLED=0 go build -ldflags="-s -w" -o {{.BIN_DIR}}/{{.BINARY}} ./cmd/{{.BINARY}}
 
-  # Testing
+  # ===================
+  # TESTING
+  # ===================
   test:
     desc: Run tests
     cmds:
@@ -77,7 +69,9 @@ tasks:
       - go test -coverprofile=coverage.out ./...
       - go tool cover -html=coverage.out -o coverage.html
 
-  # Code quality
+  # ===================
+  # CODE QUALITY
+  # ===================
   lint:
     desc: Run linter
     cmds:
@@ -89,7 +83,9 @@ tasks:
       - go fmt ./...
       - goimports -w .
 
-  # Dependencies
+  # ===================
+  # DEPENDENCIES
+  # ===================
   deps:
     desc: Download dependencies
     cmds:
@@ -100,57 +96,26 @@ tasks:
     cmds:
       - go mod tidy
 
-  deps:update:
-    desc: Update all dependencies
-    cmds:
-      - go get -u ./...
-      - go mod tidy
-
-  # Generation
-  generate:
-    desc: Run go generate
-    cmds:
-      - go generate ./...
-
-  # Clean
+  # ===================
+  # CLEAN
+  # ===================
   clean:
     desc: Clean build artifacts
     cmds:
-      - rm -rf {{.BIN_DIR}}
-      - rm -f coverage.out coverage.html
+      - rm -rf {{.BIN_DIR}} .tmp
+      - rm -f coverage.out coverage.html openapi.json openapi.yaml
 
-  # Data management
+  # ===================
+  # DATA
+  # ===================
   data:init:
-    desc: Initialize data directory structure
+    desc: Initialize data directory
     cmds:
-      - mkdir -p {{.DATA_DIR}}/tiles
-      - mkdir -p {{.DATA_DIR}}/sources
+      - mkdir -p {{.DATA_DIR}}/tiles {{.DATA_DIR}}/sources
 
-  quickstart:
-    desc: Download sample data and start server
-    cmds:
-      - task: data:init
-      - |
-        if [ ! -f {{.DATA_DIR}}/tiles/firenze.pmtiles ]; then
-          echo "Downloading sample PMTiles (Firenze)..."
-          curl -L -o {{.DATA_DIR}}/tiles/firenze.pmtiles \
-            "https://pmtiles.io/protomaps(vector)ODbL_firenze.pmtiles"
-        else
-          echo "Sample tiles already exist"
-        fi
-      - |
-        if [ ! -f {{.DATA_DIR}}/layers.json ]; then
-          echo '{"firenze":{"name":"Firenze","file":"firenze.pmtiles","pmtilesLayer":"buildings","geomType":"polygon","defaultVisible":true,"fill":"#3388ff","stroke":"#2266cc","opacity":0.7}}' > {{.DATA_DIR}}/layers.json
-        fi
-      - |
-        echo ""
-        echo "Setup complete!"
-        echo ""
-        echo "Run 'task dev' to start the server, then open:"
-        echo "  Editor: http://localhost:8086/editor"
-        echo "  Viewer: http://localhost:8086/viewer"
-
-  # Install
+  # ===================
+  # INSTALL
+  # ===================
   install:
     desc: Install binary to GOPATH/bin
     cmds:

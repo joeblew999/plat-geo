@@ -1,6 +1,8 @@
 package service
 
 import (
+	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -69,4 +71,70 @@ func (s *SourceService) List() ([]SourceFile, error) {
 // SourcesDir returns the path to the sources directory.
 func (s *SourceService) SourcesDir() string {
 	return s.sourcesDir
+}
+
+// ValidExtensions returns the valid source file extensions.
+var ValidExtensions = map[string]bool{
+	".geojson":    true,
+	".json":       true,
+	".parquet":    true,
+	".geoparquet": true,
+}
+
+// ValidateFilename checks if a filename is valid for upload.
+func (s *SourceService) ValidateFilename(filename string) error {
+	// Check for path traversal
+	if strings.Contains(filename, "/") || strings.Contains(filename, "\\") || strings.Contains(filename, "..") {
+		return fmt.Errorf("invalid filename")
+	}
+
+	ext := strings.ToLower(filepath.Ext(filename))
+	if !ValidExtensions[ext] {
+		return fmt.Errorf("only .geojson, .json, .parquet, or .geoparquet files are allowed")
+	}
+
+	return nil
+}
+
+// Save saves content to a file in the sources directory.
+func (s *SourceService) Save(filename string, content io.Reader) error {
+	if err := s.ValidateFilename(filename); err != nil {
+		return err
+	}
+
+	// Ensure sources directory exists
+	if err := os.MkdirAll(s.sourcesDir, 0755); err != nil {
+		return fmt.Errorf("failed to create sources directory: %w", err)
+	}
+
+	destPath := filepath.Join(s.sourcesDir, filename)
+	dest, err := os.Create(destPath)
+	if err != nil {
+		return fmt.Errorf("failed to create file: %w", err)
+	}
+	defer dest.Close()
+
+	if _, err := io.Copy(dest, content); err != nil {
+		return fmt.Errorf("failed to write file: %w", err)
+	}
+
+	return nil
+}
+
+// Delete removes a source file.
+func (s *SourceService) Delete(filename string) error {
+	// Check for path traversal
+	if strings.Contains(filename, "/") || strings.Contains(filename, "\\") || strings.Contains(filename, "..") {
+		return fmt.Errorf("invalid filename")
+	}
+
+	filePath := filepath.Join(s.sourcesDir, filename)
+	if err := os.Remove(filePath); err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("file not found: %s", filename)
+		}
+		return fmt.Errorf("failed to delete file: %w", err)
+	}
+
+	return nil
 }

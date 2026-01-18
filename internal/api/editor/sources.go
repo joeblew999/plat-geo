@@ -3,6 +3,7 @@ package editor
 import (
 	"bytes"
 	"context"
+	"mime/multipart"
 
 	"github.com/danielgtaylor/huma/v2"
 
@@ -27,10 +28,94 @@ func NewSourceHandler(sourceService *service.SourceService, renderer *templates.
 // RegisterRoutes registers source editor routes with Huma.
 func (h *SourceHandler) RegisterRoutes(api huma.API) {
 	huma.Get(api, "/api/v1/editor/sources", h.ListSources)
+	huma.Get(api, "/api/v1/editor/sources/list", h.ListSources) // Alias for Datastar compatibility
 	huma.Get(api, "/api/v1/editor/sources/select", h.ListSourcesSelect)
+	huma.Post(api, "/api/v1/editor/sources/upload", h.Upload)
+	huma.Delete(api, "/api/v1/editor/sources/{filename}", h.Delete)
+}
+
+// SourceUploadInput is the input for file upload.
+type SourceUploadInput struct {
+	RawBody multipart.Form
+}
+
+// Upload handles source file uploads.
+func (h *SourceHandler) Upload(ctx context.Context, input *SourceUploadInput) (*huma.StreamResponse, error) {
+	return &huma.StreamResponse{
+		Body: func(humaCtx huma.Context) {
+			sse := NewSSEContext(humaCtx)
+
+			// Get the file from the multipart form
+			files := input.RawBody.File["file"]
+			if len(files) == 0 {
+				sse.SendError("No file provided")
+				return
+			}
+
+			fileHeader := files[0]
+			file, err := fileHeader.Open()
+			if err != nil {
+				sse.SendError("Failed to open uploaded file")
+				return
+			}
+			defer file.Close()
+
+			// Validate and save
+			if err := h.sourceService.Save(fileHeader.Filename, file); err != nil {
+				sse.SendError(err.Error())
+				return
+			}
+
+			sse.SendSuccess("File uploaded: " + fileHeader.Filename)
+
+			// Refresh source list
+			sources, err := h.sourceService.List()
+			if err == nil {
+				html := h.renderSourceList(sources)
+				sse.PatchElements(html, "#source-list")
+
+				// Also refresh source select dropdown
+				selectHtml := h.renderSourceSelect(sources)
+				sse.PatchElements(selectHtml, "#source-select")
+			}
+		},
+	}, nil
+}
+
+// SourceDeleteInput is the input for deleting a source file.
+type SourceDeleteInput struct {
+	Filename string `path:"filename" doc:"Source filename to delete"`
+}
+
+// Delete removes a source file.
+func (h *SourceHandler) Delete(ctx context.Context, input *SourceDeleteInput) (*huma.StreamResponse, error) {
+	return &huma.StreamResponse{
+		Body: func(humaCtx huma.Context) {
+			sse := NewSSEContext(humaCtx)
+
+			if err := h.sourceService.Delete(input.Filename); err != nil {
+				sse.SendError(err.Error())
+				return
+			}
+
+			sse.SendSuccess("Deleted: " + input.Filename)
+
+			// Refresh source list
+			sources, err := h.sourceService.List()
+			if err == nil {
+				html := h.renderSourceList(sources)
+				sse.PatchElements(html, "#source-list")
+
+				// Also refresh source select dropdown
+				selectHtml := h.renderSourceSelect(sources)
+				sse.PatchElements(selectHtml, "#source-select")
+			}
+		},
+	}, nil
 }
 
 // ListSources streams the source list as SSE HTML fragments.
+// Also updates the source-select dropdown for consistency.
 func (h *SourceHandler) ListSources(ctx context.Context, input *EmptyInput) (*huma.StreamResponse, error) {
 	return &huma.StreamResponse{
 		Body: func(humaCtx huma.Context) {
@@ -44,6 +129,10 @@ func (h *SourceHandler) ListSources(ctx context.Context, input *EmptyInput) (*hu
 
 			html := h.renderSourceList(sources)
 			sse.PatchElements(html, "#source-list")
+
+			// Also update the source select dropdown
+			selectHtml := h.renderSourceSelect(sources)
+			sse.PatchElements(selectHtml, "#source-select")
 		},
 	}, nil
 }

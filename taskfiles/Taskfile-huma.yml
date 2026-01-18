@@ -1,5 +1,6 @@
 # Huma API Code Generation Tasks
 # Usage: task huma:spec, task huma:ts, task huma:all
+# Watch: task huma:watch -w (auto-regenerates on API changes)
 version: '3'
 
 vars:
@@ -7,21 +8,39 @@ vars:
   OPENAPI_YAML: openapi.yaml
 
 tasks:
-  # Export OpenAPI spec from Huma
+  # Watch mode for auto-regeneration
+  watch:
+    desc: Watch API files and regenerate TypeScript (use -w flag)
+    sources:
+      - 'internal/api/**/*.go'
+      - 'internal/service/types.go'
+      - 'internal/service/*.go'
+    cmds:
+      - task huma:all
+      - echo "[huma] TypeScript types regenerated"
+
+  # Export OpenAPI spec from Huma (uses geo spec command)
   spec:
     desc: Export OpenAPI spec (JSON and YAML)
     cmds:
-      - go run cmd/openapi/main.go
+      - go run ./cmd/geo spec
 
   spec:json:
     desc: Export OpenAPI spec as JSON
+    sources:
+      - 'internal/api/**/*.go'
+      - 'internal/service/types.go'
+      - 'internal/server/server.go'
+      - 'cmd/geo/main.go'
+    generates:
+      - '{{.OPENAPI_JSON}}'
     cmds:
-      - go run cmd/openapi/main.go --format json > {{.OPENAPI_JSON}}
+      - go run ./cmd/geo spec > {{.OPENAPI_JSON}}
 
   spec:yaml:
     desc: Export OpenAPI spec as YAML
     cmds:
-      - go run cmd/openapi/main.go --format yaml > {{.OPENAPI_YAML}}
+      - go run ./cmd/geo spec --yaml > {{.OPENAPI_YAML}}
 
   # TypeScript generation (using Bun)
   ts:

@@ -4,101 +4,15 @@
  */
 
 export interface paths {
-    "/api/v1/editor/layers": {
+    "/api/v1/info": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Get API v1 editor layers */
-        get: operations["get-api-v1-editor-layers"];
-        put?: never;
-        /** Post API v1 editor layers */
-        post: operations["post-api-v1-editor-layers"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/editor/layers/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Delete API v1 editor layers by ID */
-        delete: operations["delete-api-v1-editor-layers-by-id"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/editor/sources": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get API v1 editor sources */
-        get: operations["get-api-v1-editor-sources"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/editor/sources/select": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get API v1 editor sources select */
-        get: operations["get-api-v1-editor-sources-select"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/editor/tiles": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get API v1 editor tiles */
-        get: operations["get-api-v1-editor-tiles"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/editor/tiles/select": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get API v1 editor tiles select */
-        get: operations["get-api-v1-editor-tiles-select"];
+        /** Get API v1 info */
+        get: operations["get-api-v1-info"];
         put?: never;
         post?: never;
         delete?: never;
@@ -143,6 +57,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/query": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post API v1 query */
+        post: operations["post-api-v1-query"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sources": {
         parameters: {
             query?: never;
@@ -152,6 +83,23 @@ export interface paths {
         };
         /** List API v1 sources */
         get: operations["list-api-v1-sources"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tables": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get API v1 tables */
+        get: operations["get-api-v1-tables"];
         put?: never;
         post?: never;
         delete?: never;
@@ -199,12 +147,6 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         CreateLayerOutputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8086/schemas/CreateLayerOutputBody.json
-             */
-            readonly $schema?: string;
             /** @description Generated layer ID */
             id: string;
             /** @description Created layer configuration */
@@ -216,12 +158,6 @@ export interface components {
             message: string;
         };
         DeleteLayerOutputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8086/schemas/DeleteLayerOutputBody.json
-             */
-            readonly $schema?: string;
             /**
              * @description Success message
              * @example Layer deleted successfully
@@ -237,12 +173,6 @@ export interface components {
             value?: unknown;
         };
         ErrorModel: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8086/schemas/ErrorModel.json
-             */
-            readonly $schema?: string;
             /**
              * @description A human-readable explanation specific to this occurrence of the problem.
              * @example Property foo is required but is missing.
@@ -275,26 +205,31 @@ export interface components {
              */
             type: string;
         };
-        HealthOutputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8086/schemas/HealthOutputBody.json
-             */
-            readonly $schema?: string;
+        HealthBody: {
             /**
              * @description Health status
              * @example ok
              */
             status: string;
+            /**
+             * @description API version
+             * @example 1.0.0
+             */
+            version: string;
+        };
+        InfoOutputBody: {
+            /** @description Data directory path */
+            data_dir: string;
+            /** @description Whether database is available */
+            db: boolean;
+            /** @description Available features */
+            features: string[] | null;
+            /** @description Service name */
+            name: string;
+            /** @description Service version */
+            version: string;
         };
         LayerConfig: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example http://localhost:8086/schemas/LayerConfig.json
-             */
-            readonly $schema?: string;
             /**
              * @description Whether layer is visible by default
              * @default true
@@ -355,6 +290,23 @@ export interface components {
             /** @description Legend label */
             label: string;
         };
+        QueryInputBody: {
+            /** @description SQL query to execute */
+            query: string;
+        };
+        QueryOutputBody: {
+            /** @description Column names */
+            columns: string[] | null;
+            /**
+             * Format: int64
+             * @description Number of rows returned
+             */
+            count: number;
+            /** @description Query results */
+            rows: {
+                [key: string]: unknown;
+            }[] | null;
+        };
         RenderRule: {
             /** @description Fill color (CSS) */
             fill: string;
@@ -397,6 +349,10 @@ export interface components {
              */
             size: string;
         };
+        TablesOutputBody: {
+            /** @description List of table names */
+            tables: string[] | null;
+        };
         TileFile: {
             /**
              * @description PMTiles file name
@@ -418,7 +374,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    "get-api-v1-editor-layers": {
+    "get-api-v1-info": {
         parameters: {
             query?: never;
             header?: never;
@@ -432,176 +388,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
                 content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
+                    "application/json": components["schemas"]["InfoOutputBody"];
                 };
-            };
-        };
-    };
-    "post-api-v1-editor-layers": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["LayerConfig"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
-    "delete-api-v1-editor-layers-by-id": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Layer ID to delete */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
-    "get-api-v1-editor-sources": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
-    "get-api-v1-editor-sources-select": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
-    "get-api-v1-editor-tiles": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
-    "get-api-v1-editor-tiles-select": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
             /** @description Error */
             default: {
@@ -748,6 +537,39 @@ export interface operations {
             };
         };
     };
+    "post-api-v1-query": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QueryInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueryOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "list-api-v1-sources": {
         parameters: {
             query?: never;
@@ -764,6 +586,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SourceFile"][] | null;
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-api-v1-tables": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TablesOutputBody"];
                 };
             };
             /** @description Error */
@@ -821,7 +672,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HealthOutputBody"];
+                    "application/json": components["schemas"]["HealthBody"];
                 };
             };
             /** @description Error */

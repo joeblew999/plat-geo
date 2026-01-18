@@ -39,17 +39,18 @@ func RegisterRoutes(api huma.API, services *Services) {
 
 // ==================== Health ====================
 
+type HealthBody struct {
+	Status  string `json:"status" doc:"Health status" example:"ok"`
+	Version string `json:"version" doc:"API version" example:"1.0.0"`
+}
+
 type HealthOutput struct {
-	Body struct {
-		Status string `json:"status" doc:"Health status" example:"ok"`
-	}
+	Body HealthBody
 }
 
 func GetHealth(ctx context.Context, input *struct{}) (*HealthOutput, error) {
 	return &HealthOutput{
-		Body: struct {
-			Status string `json:"status" doc:"Health status" example:"ok"`
-		}{Status: "ok"},
+		Body: HealthBody{Status: "ok", Version: "1.0.0"},
 	}, nil
 }
 

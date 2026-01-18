@@ -49,26 +49,62 @@ func (h *LayerHandler) ListLayers(ctx context.Context, input *EmptyInput) (*huma
 	}, nil
 }
 
-// CreateLayerInput is the input for creating a layer via Datastar signals.
-type CreateLayerInput struct {
-	Body service.LayerConfig
-}
+// CreateLayer creates a new layer from Datastar signals and streams updated list.
+// Signal names: newlayername, newlayerfile, newlayerpmtileslayer, newlayergeomtype,
+// newlayerfill, newlayerstroke, newlayeropacity, newlayervisible
+func (h *LayerHandler) CreateLayer(ctx context.Context, input *SignalsInput) (*huma.StreamResponse, error) {
+	// Parse Datastar signals from request body
+	signals, err := input.MustParse()
+	if err != nil {
+		return nil, err
+	}
 
-// CreateLayer creates a new layer and streams updated list.
-func (h *LayerHandler) CreateLayer(ctx context.Context, input *CreateLayerInput) (*huma.StreamResponse, error) {
+	// Map Datastar signal names to LayerConfig fields
+	// HTML uses newlayername, newlayerfile, etc.
+	config := service.LayerConfig{
+		Name:           signals.String("newlayername"),
+		File:           signals.String("newlayerfile"),
+		PMTilesLayer:   signals.String("newlayerpmtileslayer"),
+		GeomType:       signals.String("newlayergeomtype"),
+		Fill:           signals.String("newlayerfill"),
+		Stroke:         signals.String("newlayerstroke"),
+		Opacity:        signals.Float("newlayeropacity"),
+		DefaultVisible: signals.Bool("newlayervisible"),
+	}
+
+	// Validate required fields
+	if config.Name == "" {
+		return nil, huma.Error400BadRequest("Layer name is required")
+	}
+	if config.File == "" {
+		return nil, huma.Error400BadRequest("PMTiles file is required")
+	}
+	if config.GeomType == "" {
+		return nil, huma.Error400BadRequest("Geometry type is required")
+	}
+
 	return &huma.StreamResponse{
 		Body: func(humaCtx huma.Context) {
 			sse := NewSSEContext(humaCtx)
 
-			created, err := h.layerService.Create(input.Body)
+			created, err := h.layerService.Create(config)
 			if err != nil {
 				sse.SendError(err.Error())
 				return
 			}
 
+			// Reset form signals and show success
 			sse.SendSignals(map[string]any{
-				"success":       fmt.Sprintf("Layer '%s' created", created.Name),
-				"_editingLayer": false,
+				"success":              fmt.Sprintf("Layer '%s' created", created.Name),
+				"_editingLayer":        false,
+				"newlayername":         "",
+				"newlayerfile":         "",
+				"newlayerpmtileslayer": "default",
+				"newlayergeomtype":     "polygon",
+				"newlayerfill":         "#3388ff",
+				"newlayerstroke":       "#2266cc",
+				"newlayeropacity":      0.7,
+				"newlayervisible":      true,
 			})
 
 			layers := h.layerService.List()

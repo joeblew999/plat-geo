@@ -4,7 +4,7 @@
         <span class="layer-card-title">{{.Name}}</span>
         <div class="layer-card-actions">
             <button class="btn btn-sm btn-secondary" onclick='previewLayer("{{.ID}}", {{.ConfigJSON}})'>Preview</button>
-            <button class="btn btn-sm btn-danger" data-on:click="@delete('/api/v1/editor/layers?id={{.ID}}')">Delete</button>
+            <button class="btn btn-sm btn-danger" data-on:click="@delete('/api/v1/editor/layers/{{.ID}}')">Delete</button>
         </div>
     </div>
     <div class="layer-card-meta">{{.File}} &bull; {{.GeomType}}</div>

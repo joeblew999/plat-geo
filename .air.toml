@@ -1,0 +1,21 @@
+root = "."
+tmp_dir = ".bin"
+
+[build]
+  bin = "./.bin/geo"
+  args_bin = ["serve"]
+  cmd = "task build && task huma:all"
+  delay = 500
+  exclude_dir = [".bin", ".data", ".tmp", ".git", ".src", "vendor", "node_modules", "web"]
+  exclude_regex = ["_test.go"]
+  include_dir = ["cmd", "internal"]
+  include_ext = ["go", "html"]
+  kill_delay = 500
+  send_interrupt = true
+
+[log]
+  time = false
+  main_only = true
+
+[misc]
+  clean_on_exit = true
