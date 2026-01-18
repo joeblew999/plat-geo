@@ -118,6 +118,29 @@ tasks:
   # INSTALL
   # ===================
   install:
+    desc: Install binary locally via xplat
+    cmds:
+      - xplat binary install {{.BINARY}} v0.1.0 joeblew999/plat-geo --source ./cmd/{{.BINARY}} --force
+
+  install:go:
     desc: Install binary to GOPATH/bin
     cmds:
       - go install ./cmd/{{.BINARY}}
+
+  # ===================
+  # RELEASE
+  # ===================
+  release:build:
+    desc: Build release binaries for all platforms
+    cmds:
+      - xplat release build {{.BINARY}}
+
+  release:build:current:
+    desc: Build release binary for current platform
+    cmds:
+      - xplat release build {{.BINARY}} --current
+
+  release:list:
+    desc: List built release binaries
+    cmds:
+      - xplat release list {{.BINARY}}
