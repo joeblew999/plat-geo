@@ -1,10 +1,12 @@
 # xplat generated
 .data/
+.src/
 *.pmtiles
 *.parquet
 
 # Binary
 .bin/
+bin/
 
 # Go
 *.exe
@@ -33,6 +35,17 @@ Thumbs.db
 # Generated
 Taskfile.generated.yml
 process-compose.generated.yaml
+openapi.json
+openapi.yaml
+openapi
+
+# Generated code (keep in repo for convenience, but can regenerate with task huma:all)
+# internal/apiclient/
+# web/src/generated/
+
+# Node
+node_modules/
+bun.lock
 
 # Environment
 .env

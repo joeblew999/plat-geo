@@ -3,7 +3,9 @@ version: "3"
 vars:
   BIN_DIR: '{{.BIN_DIR | default ".bin"}}'
   DATA_DIR: '{{.DATA_DIR | default ".data"}}'
+  DUCKDB_DIR: '{{.DATA_DIR | default ".data"}}/duckdb'
   DUCKDB: '{{.BIN_DIR | default ".bin"}}/duckdb'
+  DUCKDB_FILE: '{{.DATA_DIR | default ".data"}}/duckdb/geo.duckdb'
 
 tasks:
   install:
@@ -41,7 +43,8 @@ tasks:
   shell:
     desc: Open DuckDB shell
     cmds:
-      - '{{.DUCKDB}} {{.DATA_DIR}}/geo.duckdb'
+      - mkdir -p {{.DUCKDB_DIR}}
+      - '{{.DUCKDB}} {{.DUCKDB_FILE}}'
 
   shell:memory:
     desc: Open DuckDB in-memory shell
@@ -51,7 +54,7 @@ tasks:
   query:
     desc: Run a query (use -- -c "SELECT ...")
     cmds:
-      - '{{.DUCKDB}} {{.DATA_DIR}}/geo.duckdb {{.CLI_ARGS}}'
+      - '{{.DUCKDB}} {{.DUCKDB_FILE}} {{.CLI_ARGS}}'
 
   load:parquet:
     desc: Load a parquet file into table (FILE=path TABLE=name)
@@ -59,7 +62,7 @@ tasks:
       FILE: '{{.FILE}}'
       TABLE: '{{.TABLE | default "data"}}'
     cmds:
-      - '{{.DUCKDB}} {{.DATA_DIR}}/geo.duckdb -c "CREATE OR REPLACE TABLE {{.TABLE}} AS SELECT * FROM ''{{.FILE}}'';"'
+      - '{{.DUCKDB}} {{.DUCKDB_FILE}} -c "CREATE OR REPLACE TABLE {{.TABLE}} AS SELECT * FROM ''{{.FILE}}'';"'
 
   load:geoparquet:
     desc: Load a GeoParquet file with geography extension
@@ -68,7 +71,7 @@ tasks:
       TABLE: '{{.TABLE | default "geodata"}}'
     cmds:
       - |
-        {{.DUCKDB}} {{.DATA_DIR}}/geo.duckdb -c "
+        {{.DUCKDB}} {{.DUCKDB_FILE}} -c "
           LOAD geography;
           CREATE OR REPLACE TABLE {{.TABLE}} AS SELECT * FROM '{{.FILE}}';
         "
@@ -76,7 +79,7 @@ tasks:
   info:
     desc: Show database info
     cmds:
-      - '{{.DUCKDB}} {{.DATA_DIR}}/geo.duckdb -c "PRAGMA database_list; SHOW TABLES;"'
+      - '{{.DUCKDB}} {{.DUCKDB_FILE}} -c "PRAGMA database_list; SHOW TABLES;"'
 
   version:
     desc: Show DuckDB version
@@ -94,7 +97,7 @@ tasks:
     vars:
       DUCKDB_UI_PORT: '{{.DUCKDB_UI_PORT | default "4213"}}'
     cmds:
-      - '{{.DUCKDB}} {{.DATA_DIR}}/geo.duckdb -c "LOAD ui; CALL start_ui_server(host := ''0.0.0.0'', port := {{.DUCKDB_UI_PORT}}, open_browser := false); SELECT ''UI running on http://localhost:{{.DUCKDB_UI_PORT}}''; CALL ui_wait();"'
+      - '{{.DUCKDB}} {{.DUCKDB_FILE}} -c "LOAD ui; CALL start_ui_server(host := ''0.0.0.0'', port := {{.DUCKDB_UI_PORT}}, open_browser := false); SELECT ''UI running on http://localhost:{{.DUCKDB_UI_PORT}}''; CALL ui_wait();"'
 
   ui:health:
     desc: Health check for DuckDB UI (for process-compose)
@@ -106,4 +109,4 @@ tasks:
   ui:open:
     desc: Open DuckDB UI in browser
     cmds:
-      - '{{.DUCKDB}} {{.DATA_DIR}}/geo.duckdb -ui'
+      - '{{.DUCKDB}} {{.DUCKDB_FILE}} -ui'

@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>plat-geo - Layer Editor</title>
+    <link rel="stylesheet" href="/static/css/vendor/leaflet.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 360px;
+            background: #f8f9fa;
+            border-right: 1px solid #dee2e6;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .sidebar-header {
+            padding: 16px;
+            background: #343a40;
+            color: white;
+        }
+
+        .sidebar-header h1 {
+            font-size: 18px;
+            margin-bottom: 4px;
+        }
+
+        .sidebar-header p {
+            font-size: 12px;
+            opacity: 0.7;
+        }
+
+        .sidebar-nav {
+            display: flex;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .sidebar-nav button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 14px;
+            color: #666;
+            border-bottom: 2px solid transparent;
+        }
+
+        .sidebar-nav button.active {
+            color: #0066cc;
+            border-bottom-color: #0066cc;
+            background: white;
+        }
+
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        /* Map */
+        #map {
+            flex: 1;
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 6px;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #0066cc;
+            box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+        }
+
+        .form-group small {
+            display: block;
+            margin-top: 4px;
+            color: #666;
+            font-size: 12px;
+        }
+
+        /* Layer list */
+        .layer-card {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+
+        .layer-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .layer-card-title {
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .layer-card-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .layer-card-meta {
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background: #0066cc;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0052a3;
+        }
+
+        .btn-secondary {
+            background: #e9ecef;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #dee2e6;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-sm {
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Color picker */
+        .color-input {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .color-input input[type="color"] {
+            width: 40px;
+            height: 32px;
+            padding: 2px;
+            border-radius: 4px;
+        }
+
+        .color-input input[type="text"] {
+            flex: 1;
+        }
+
+        /* Style rules */
+        .rule-list {
+            margin-top: 12px;
+        }
+
+        .rule-item {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 12px;
+            margin-bottom: 8px;
+        }
+
+        .rule-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        /* Status indicators */
+        .status-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .status-ready { background: #d4edda; color: #155724; }
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-error { background: #f8d7da; color: #721c24; }
+        .status-processing { background: #cce5ff; color: #004085; }
+
+        /* Progress */
+        .progress-bar {
+            height: 4px;
+            background: #e9ecef;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #0066cc;
+            transition: width 0.3s ease;
+        }
+
+        /* Loading spinner */
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #0066cc;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Alerts */
+        .alert {
+            padding: 12px 16px;
+            border-radius: 4px;
+            margin-bottom: 16px;
+            font-size: 14px;
+        }
+
+        .alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .alert-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .alert-info { background: #cce5ff; color: #004085; border: 1px solid #b8daff; }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 32px 16px;
+            color: #666;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                height: 50vh;
+                border-right: none;
+                border-bottom: 1px solid #dee2e6;
+            }
+
+            #map {
+                height: 50vh;
+            }
+        }
+    </style>
+</head>
+<body data-signals="{_activeTab: 'layers', _editingLayer: false, newlayername: '', newlayerfile: '', newlayerpmtileslayer: 'default', newlayergeomtype: 'polygon', newlayerfill: '#3388ff', newlayerstroke: '#2266cc', newlayeropacity: 0.7, newlayervisible: true, availableTiles: [], availableSources: [], tileProgress: 0, tileStatus: '', error: '', success: ''}">
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h1>plat-geo Editor</h1>
+            <p>Layer configuration & tile generation</p>
+        </div>
+
+        <nav class="sidebar-nav">
+            <button data-on:click="$_activeTab = 'layers'"
+                    data-class="{'active': $_activeTab === 'layers'}">
+                Layers
+            </button>
+            <button data-on:click="$_activeTab = 'tiles'"
+                    data-class="{'active': $_activeTab === 'tiles'}">
+                Tiles
+            </button>
+            <button data-on:click="$_activeTab = 'sources'"
+                    data-class="{'active': $_activeTab === 'sources'}">
+                Sources
+            </button>
+        </nav>
+
+        <div class="sidebar-content">
+            <!-- Alerts -->
+            <div data-show="$error" class="alert alert-error" id="error-alert">
+                <span data-text="$error"></span>
+                <button data-on:click="$error = ''" style="float:right; background:none; border:none; cursor:pointer;">×</button>
+            </div>
+            <div data-show="$success" class="alert alert-success" id="success-alert">
+                <span data-text="$success"></span>
+                <button data-on:click="$success = ''" style="float:right; background:none; border:none; cursor:pointer;">×</button>
+            </div>
+
+            <!-- Layers Tab -->
+            <div data-show="$_activeTab === 'layers'">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <h2 style="font-size: 16px;">Map Layers</h2>
+                    <button class="btn btn-primary btn-sm"
+                            data-on:click="$_editingLayer = 'new'">
+                        + Add Layer
+                    </button>
+                </div>
+
+                <!-- New/Edit Layer Form -->
+                <div data-show="$_editingLayer" class="layer-card" style="border-color: #0066cc;"
+                     data-on:load="@get('/api/v1/editor/tiles/list')">
+                    <form data-on:submit__prevent="@post('/api/v1/editor/layers')">
+                        <div class="form-group">
+                            <label>Layer Name</label>
+                            <input type="text"
+                                   data-bind:newlayername
+                                   placeholder="e.g., Counties, Parks, Roads"
+                                   required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>PMTiles File</label>
+                            <select data-bind:newlayerfile required id="pmtiles-select">
+                                <option value="">-- Select a PMTiles file --</option>
+                            </select>
+                            <small>Select from available PMTiles in your tiles directory</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Layer Name in Tiles</label>
+                            <input type="text"
+                                   data-bind:newlayerpmtileslayer
+                                   placeholder="default">
+                            <small>The vector layer name inside the PMTiles (e.g., buildings, roads)</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Geometry Type</label>
+                            <select data-bind:newlayergeomtype>
+                                <option value="polygon">Polygon</option>
+                                <option value="line">Line</option>
+                                <option value="point">Point</option>
+                            </select>
+                        </div>
+
+                        <div style="display: flex; gap: 16px;">
+                            <div class="form-group" style="flex: 1;">
+                                <label>Fill Color</label>
+                                <div class="color-input">
+                                    <input type="color" data-bind:newlayerfill>
+                                    <input type="text" data-bind:newlayerfill placeholder="#3388ff">
+                                </div>
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <label>Stroke Color</label>
+                                <div class="color-input">
+                                    <input type="color" data-bind:newlayerstroke>
+                                    <input type="text" data-bind:newlayerstroke placeholder="#2266cc">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Opacity (0-1)</label>
+                            <input type="number"
+                                   data-bind:newlayeropacity
+                                   min="0" max="1" step="0.1"
+                                   placeholder="0.7">
+                        </div>
+
+                        <div class="form-group">
+                            <label style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" data-bind:newlayervisible>
+                                Visible by default
+                            </label>
+                        </div>
+
+                        <div style="display: flex; gap: 8px;">
+                            <button type="submit" class="btn btn-primary"
+                                    data-indicator="#layer-saving">
+                                Save Layer
+                            </button>
+                            <button type="button" class="btn btn-secondary"
+                                    data-on:click="$_editingLayer = false; $newlayername = ''; $newlayerfile = ''; $newlayerpmtileslayer = 'default'; $newlayergeomtype = 'polygon'; $newlayerfill = '#3388ff'; $newlayerstroke = '#2266cc'; $newlayeropacity = 0.7; $newlayervisible = true">
+                                Cancel
+                            </button>
+                            <span id="layer-saving" style="display:none">
+                                <span class="spinner"></span>
+                            </span>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Layer List -->
+                <div id="layer-list" data-init="@get('/api/v1/editor/layers')">
+                    <div class="empty-state">
+                        <span class="spinner"></span>
+                        <p>Loading layers...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tiles Tab -->
+            <div data-show="$_activeTab === 'tiles'" data-on:load="@get('/api/v1/editor/sources/list')">
+                <h2 style="font-size: 16px; margin-bottom: 16px;">PMTiles Management</h2>
+
+                <!-- Available Tiles -->
+                <div id="tile-list" data-init="@get('/api/v1/editor/tiles')">
+                    <div class="empty-state">
+                        <span class="spinner"></span>
+                        <p>Loading tiles...</p>
+                    </div>
+                </div>
+
+                <div style="margin-top: 24px;">
+                    <div class="layer-card">
+                        <h3 style="font-size: 14px; margin-bottom: 12px;">Generate PMTiles from GeoJSON</h3>
+
+                        <form data-on:submit__prevent="@post('/api/v1/editor/tiles/generate')">
+                            <div class="form-group" data-init="@get('/api/v1/editor/sources/list')">
+                                <label>Source File</label>
+                                <select data-bind:tilesourcefile id="source-select">
+                                    <option value="">-- Select a source file --</option>
+                                </select>
+                                <small>Select from uploaded GeoJSON or GeoParquet files</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Output PMTiles Name</label>
+                                <input type="text"
+                                       data-bind:tileoutputname
+                                       placeholder="output.pmtiles"
+                                       required>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Layer Name</label>
+                                <input type="text"
+                                       data-bind:tilelayername
+                                       value="default"
+                                       placeholder="default">
+                            </div>
+
+                            <div style="display: flex; gap: 16px;">
+                                <div class="form-group" style="flex: 1;">
+                                    <label>Min Zoom</label>
+                                    <input type="number"
+                                           data-bind:tileminzoom
+                                           value="0"
+                                           min="0"
+                                           max="22">
+                                </div>
+                                <div class="form-group" style="flex: 1;">
+                                    <label>Max Zoom</label>
+                                    <input type="number"
+                                           data-bind:tilemaxzoom
+                                           value="14"
+                                           min="0"
+                                           max="22">
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary"
+                                    data-indicator="#tile-generating"
+                                    data-attr:disabled="$tileStatus === 'processing'">
+                                Generate Tiles
+                            </button>
+                            <span id="tile-generating" style="display:none">
+                                <span class="spinner"></span> Generating...
+                            </span>
+                        </form>
+
+                        <!-- Progress -->
+                        <div data-show="$tileStatus !== ''">
+                            <div style="margin-top: 16px;">
+                                <div style="display: flex; justify-content: space-between; font-size: 13px;">
+                                    <span data-text="$tileStatus"></span>
+                                    <span data-text="`${$tileProgress}%`"></span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" data-style:width="`${$tileProgress}%`"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sources Tab -->
+            <div data-show="$_activeTab === 'sources'">
+                <h2 style="font-size: 16px; margin-bottom: 16px;">Data Sources</h2>
+
+                <div class="layer-card">
+                    <h3 style="font-size: 14px; margin-bottom: 12px;">Upload GeoJSON</h3>
+                    <form id="upload-form" enctype="multipart/form-data">
+                        <div class="form-group">
+                            <input type="file"
+                                   id="file-input"
+                                   name="file"
+                                   accept=".geojson,.json,.parquet,.geoparquet">
+                            <small>Supported: GeoJSON (.geojson, .json), GeoParquet (.parquet, .geoparquet)</small>
+                        </div>
+                        <button type="button" class="btn btn-primary"
+                                id="upload-btn"
+                                onclick="uploadFile()">
+                            Upload File
+                        </button>
+                        <span id="uploading" style="display:none">
+                            <span class="spinner"></span> Uploading...
+                        </span>
+                    </form>
+                </div>
+
+                <div style="margin-top: 24px;">
+                    <h3 style="font-size: 14px; margin-bottom: 12px;">Available Sources</h3>
+                    <div id="source-list" data-init="@get('/api/v1/editor/sources')">
+                        <div class="empty-state">
+                            <span class="spinner"></span>
+                            <p>Loading sources...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="map"></div>
+
+    <script src="/static/js/vendor/leaflet.js"></script>
+    <script src="/static/js/vendor/pmtiles.js"></script>
+    <script src="/static/js/vendor/protomaps-leaflet.js"></script>
+    <script type="module" src="/static/js/vendor/datastar.js"></script>
+    <script>
+        // Initialize map
+        // Default to Firenze (Florence, Italy) for the sample data
+        const map = L.map('map').setView([43.7696, 11.2558], 13);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Track loaded preview layers
+        const previewLayers = {};
+
+        // Preview layer on map
+        // layerConfig: { file, pmtilesLayer, geomType, fill, stroke, opacity }
+        window.previewLayer = function(layerId, layerConfig) {
+            if (previewLayers[layerId]) {
+                map.removeLayer(previewLayers[layerId]);
+                delete previewLayers[layerId];
+                return;
+            }
+
+            const pmtilesUrl = '/tiles/' + layerConfig.file;
+            const dataLayerName = layerConfig.pmtilesLayer || 'default';
+            const geomType = layerConfig.geomType || 'polygon';
+            const fill = layerConfig.fill || '#3388ff';
+            const stroke = layerConfig.stroke || '#2266cc';
+            const opacity = layerConfig.opacity || 0.7;
+
+            // Build symbolizer based on geometry type
+            let symbolizer;
+            if (geomType === 'point') {
+                symbolizer = new protomapsL.CircleSymbolizer({
+                    fill: fill,
+                    stroke: stroke,
+                    opacity: opacity,
+                    radius: 5,
+                    width: 1
+                });
+            } else if (geomType === 'line') {
+                symbolizer = new protomapsL.LineSymbolizer({
+                    color: stroke,
+                    opacity: opacity,
+                    width: 2
+                });
+            } else {
+                symbolizer = new protomapsL.PolygonSymbolizer({
+                    fill: fill,
+                    stroke: stroke,
+                    opacity: opacity,
+                    width: 1
+                });
+            }
+
+            const layer = protomapsL.leafletLayer({
+                url: pmtilesUrl,
+                paintRules: [{
+                    dataLayer: dataLayerName,
+                    symbolizer: symbolizer
+                }]
+            });
+
+            layer.addTo(map);
+            previewLayers[layerId] = layer;
+        };
+
+        // Fit map to layer bounds
+        window.fitToLayer = function(bounds) {
+            if (bounds && bounds.length === 4) {
+                map.fitBounds([
+                    [bounds[1], bounds[0]],
+                    [bounds[3], bounds[2]]
+                ]);
+            }
+        };
+
+        // File upload function
+        window.uploadFile = async function() {
+            const fileInput = document.getElementById('file-input');
+            const uploadBtn = document.getElementById('upload-btn');
+            const uploading = document.getElementById('uploading');
+
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert('Please select a file first');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            uploadBtn.disabled = true;
+            uploading.style.display = 'inline';
+
+            try {
+                const response = await fetch('/api/v1/editor/sources/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const text = await response.text();
+                    throw new Error(text || 'Upload failed');
+                }
+
+                // Refresh sources list
+                const sourceList = document.getElementById('source-list');
+                if (sourceList) {
+                    // Trigger Datastar refresh by re-initializing the element
+                    const event = new CustomEvent('datastar-refresh');
+                    sourceList.dispatchEvent(event);
+                }
+
+                // Clear file input
+                fileInput.value = '';
+                alert('File uploaded successfully!');
+
+                // Reload sources list
+                window.location.reload();
+            } catch (error) {
+                alert('Upload error: ' + error.message);
+            } finally {
+                uploadBtn.disabled = false;
+                uploading.style.display = 'none';
+            }
+        };
+
+        // Use a PMTiles file as a layer - switch to Layers tab with file pre-filled
+        window.useAsLayer = function(filename) {
+            // Update signals via DOM - Datastar v1.0.0-RC.7 stores signals on body
+            const signalStore = window.ds?.store;
+            if (signalStore) {
+                signalStore._activeTab.value = 'layers';
+                signalStore._editingLayer.value = 'new';
+                signalStore.newlayerfile.value = filename;
+                signalStore.newlayername.value = filename.replace('.pmtiles', '');
+            } else {
+                // Fallback: trigger navigation and form population via custom event
+                document.body.dispatchEvent(new CustomEvent('use-as-layer', { detail: { filename } }));
+                // Simple fallback: reload with query param
+                window.location.href = '/editor?useAsLayer=' + encodeURIComponent(filename);
+            }
+        };
+
+        // Preview a PMTiles file on the map (from Tiles tab - uses default layer name)
+        window.previewTile = function(filename) {
+            // For raw tile preview, use 'default' as the layer name since we don't know the actual layer
+            previewLayer('tile-' + filename, {
+                file: filename,
+                pmtilesLayer: 'default',
+                geomType: 'polygon',
+                fill: '#3388ff',
+                stroke: '#2266cc',
+                opacity: 0.7
+            });
+        };
+
+        // Generate tiles from a source file - switch to Tiles tab with file pre-filled
+        window.generateTilesFrom = function(filename) {
+            const signalStore = window.ds?.store;
+            const outputName = filename.replace(/\.(geojson|json|parquet|geoparquet)$/i, '.pmtiles');
+            if (signalStore) {
+                signalStore._activeTab.value = 'tiles';
+                signalStore.tilesourcefile.value = filename;
+                signalStore.tileoutputname.value = outputName;
+            } else {
+                window.location.href = '/editor?generateFrom=' + encodeURIComponent(filename);
+            }
+        };
+
+        // Delete a source file
+        window.deleteSource = async function(filename) {
+            if (!confirm('Are you sure you want to delete ' + filename + '?')) {
+                return;
+            }
+            try {
+                const response = await fetch('/api/v1/editor/sources/' + encodeURIComponent(filename), {
+                    method: 'DELETE'
+                });
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    alert('Failed to delete file');
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        };
+
+        // Check for query params on load
+        document.addEventListener('DOMContentLoaded', function() {
+            const params = new URLSearchParams(window.location.search);
+            const useAsLayerFile = params.get('useAsLayer');
+            if (useAsLayerFile) {
+                // Wait for Datastar to initialize, then set signals
+                setTimeout(() => {
+                    const signalStore = window.ds?.store;
+                    if (signalStore) {
+                        signalStore._activeTab.value = 'layers';
+                        signalStore._editingLayer.value = 'new';
+                        signalStore.newlayerfile.value = useAsLayerFile;
+                        signalStore.newlayername.value = useAsLayerFile.replace('.pmtiles', '');
+                    }
+                }, 100);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{{define "source-card"}}
+<div class="layer-card">
+    <div class="layer-card-header">
+        <span class="layer-card-title">{{.Name}}</span>
+        <div class="layer-card-actions">
+            <button class="btn btn-primary btn-sm" onclick="generateTilesFrom('{{.Name}}')">Generate Tiles</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteSource('{{.Name}}')">Delete</button>
+        </div>
+    </div>
+    <div class="layer-card-meta">
+        <span class="status-badge status-ready">{{.FileType}}</span> {{.Size}}
+    </div>
+</div>
+{{end}}

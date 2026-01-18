@@ -1,0 +1,9 @@
+{{define "layer-list"}}
+{{if .Layers}}
+{{range .Layers}}
+{{template "layer-card" .}}
+{{end}}
+{{else}}
+{{template "empty-state" dict "Title" "No layers configured" "Message" "Add a layer to get started"}}
+{{end}}
+{{end}}

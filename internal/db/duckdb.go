@@ -3,6 +3,8 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"os"
+	"path/filepath"
 	"sync"
 
 	_ "github.com/marcboeker/go-duckdb"
@@ -23,7 +25,14 @@ type Config struct {
 // Get returns the singleton DuckDB connection.
 func Get(cfg Config) (*sql.DB, error) {
 	once.Do(func() {
-		dbPath := fmt.Sprintf("%s/%s.duckdb", cfg.DataDir, cfg.DBName)
+		// Create duckdb subdirectory
+		duckdbDir := filepath.Join(cfg.DataDir, "duckdb")
+		if err := os.MkdirAll(duckdbDir, 0755); err != nil {
+			initErr = fmt.Errorf("failed to create duckdb directory: %w", err)
+			return
+		}
+
+		dbPath := filepath.Join(duckdbDir, cfg.DBName+".duckdb")
 		instance, initErr = sql.Open("duckdb", dbPath)
 		if initErr != nil {
 			return

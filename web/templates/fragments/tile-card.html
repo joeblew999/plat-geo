@@ -1,0 +1,14 @@
+{{define "tile-card"}}
+<div class="layer-card">
+    <div class="layer-card-header">
+        <span class="layer-card-title">{{.Name}}</span>
+        <div class="layer-card-actions">
+            <button class="btn btn-primary btn-sm" onclick="useAsLayer('{{.Name}}')">Use as Layer</button>
+            <button class="btn btn-secondary btn-sm" onclick="previewTile('{{.Name}}')">Preview</button>
+        </div>
+    </div>
+    <div class="layer-card-meta">
+        <span class="status-badge status-ready">Ready</span> {{.Size}}
+    </div>
+</div>
+{{end}}

@@ -1,0 +1,86 @@
+version: "3"
+
+vars:
+  BIN_DIR: '{{.BIN_DIR | default ".bin"}}'
+  DATA_DIR: '{{.DATA_DIR | default ".data"}}'
+  PMTILES_DIR: '{{.DATA_DIR}}/pmtiles'
+  PMTILES: '{{.BIN_DIR}}/pmtiles'
+  PMTILES_VERSION: '1.22.3'
+  BASEMAP_URL: 'https://build.protomaps.com'
+
+tasks:
+  install:
+    desc: Install pmtiles CLI to .bin
+    status:
+      - test -f {{.PMTILES}}
+    cmds:
+      - mkdir -p {{.BIN_DIR}}
+      - |
+        OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+        ARCH=$(uname -m)
+        case "$ARCH" in
+          x86_64) ARCH="amd64" ;;
+          aarch64|arm64) ARCH="arm64" ;;
+        esac
+        curl -L -o /tmp/pmtiles.tar.gz \
+          "https://github.com/protomaps/go-pmtiles/releases/download/v{{.PMTILES_VERSION}}/go-pmtiles_${OS}_${ARCH}.tar.gz"
+        tar -xzf /tmp/pmtiles.tar.gz -C {{.BIN_DIR}}
+        rm /tmp/pmtiles.tar.gz
+      - '{{.PMTILES}} --version'
+
+  version:
+    desc: Show pmtiles version
+    deps: [install]
+    cmds:
+      - '{{.PMTILES}} --version'
+
+  extract:
+    desc: Extract region from Protomaps daily build (BBOX="-122.6,37.2,-121.7,38.0" NAME="bayarea")
+    deps: [install]
+    vars:
+      BBOX: '{{.BBOX}}'
+      NAME: '{{.NAME | default "region"}}'
+      MAXZOOM: '{{.MAXZOOM | default "15"}}'
+    cmds:
+      - mkdir -p {{.PMTILES_DIR}}
+      - |
+        {{.PMTILES}} extract {{.BASEMAP_URL}}/$(date +%Y%m%d).pmtiles \
+          {{.PMTILES_DIR}}/{{.NAME}}.pmtiles \
+          --bbox={{.BBOX}} \
+          --maxzoom={{.MAXZOOM}}
+
+  serve:
+    desc: Serve PMTiles locally
+    deps: [install]
+    vars:
+      PORT: '{{.PMTILES_PORT | default "8081"}}'
+    cmds:
+      - '{{.PMTILES}} serve {{.PMTILES_DIR}} --port {{.PORT}}'
+
+  serve:health:
+    desc: Health check for PMTiles server
+    vars:
+      PORT: '{{.PMTILES_PORT | default "8081"}}'
+    cmds:
+      - curl -sf http://localhost:{{.PORT}}/ > /dev/null
+
+  show:
+    desc: Show PMTiles file info (FILE=basemap.pmtiles)
+    deps: [install]
+    vars:
+      FILE: '{{.FILE | default "basemap.pmtiles"}}'
+    cmds:
+      - '{{.PMTILES}} show {{.PMTILES_DIR}}/{{.FILE}}'
+
+  verify:
+    desc: Verify PMTiles file integrity (FILE=basemap.pmtiles)
+    deps: [install]
+    vars:
+      FILE: '{{.FILE | default "basemap.pmtiles"}}'
+    cmds:
+      - '{{.PMTILES}} verify {{.PMTILES_DIR}}/{{.FILE}}'
+
+  list:
+    desc: List PMTiles files
+    cmds:
+      - ls -lh {{.PMTILES_DIR}}/*.pmtiles 2>/dev/null || echo "No PMTiles files found"

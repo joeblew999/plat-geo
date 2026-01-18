@@ -51,16 +51,31 @@ func runServer() {
 	port := getEnv("GEO_PORT", "8086")
 	host := getEnv("GEO_HOST", "0.0.0.0")
 	dataDir := getEnv("GEO_DATA_DIR", ".data")
+	webDir := getEnv("GEO_WEB_DIR", "web")
 
 	srv := server.New(server.Config{
 		Host:    host,
 		Port:    port,
 		DataDir: dataDir,
+		WebDir:  webDir,
 	})
 
 	addr := fmt.Sprintf("%s:%s", host, port)
-	log.Printf("Starting geo server on %s", addr)
-	log.Printf("Data directory: %s", dataDir)
+	displayHost := host
+	if host == "0.0.0.0" {
+		displayHost = "localhost"
+	}
+	baseURL := fmt.Sprintf("http://%s:%s", displayHost, port)
+
+	fmt.Println()
+	fmt.Printf("plat-geo API server starting...\n")
+	fmt.Printf("  Server:  %s\n", baseURL)
+	fmt.Printf("  Data:    %s\n", dataDir)
+	fmt.Println()
+	fmt.Printf("  Pages:   %s/viewer, %s/editor\n", baseURL, baseURL)
+	fmt.Printf("  Docs:    %s/docs\n", baseURL)
+	fmt.Printf("  OpenAPI: %s/openapi.json\n", baseURL)
+	fmt.Println()
 
 	if err := http.ListenAndServe(addr, srv); err != nil {
 		log.Fatalf("Server error: %v", err)
@@ -73,3 +88,4 @@ func getEnv(key, defaultValue string) string {
 	}
 	return defaultValue
 }
+
