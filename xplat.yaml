@@ -18,19 +18,20 @@ binary:
       repo: joeblew999/plat-geo
       asset: geo-{{.OS}}-{{.ARCH}}
 
-# Taskfile remote include configuration
+# Taskfile remote include configuration (for consumers)
 taskfile:
-  path: Taskfile.yml
+  path: taskfiles/Taskfile.service.yml
   namespace: geo
 
 # Process configuration for the geo server
-process:
-  command: task geo:run
-  port: 8086
-  health_path: /health
-  readiness:
-    initial_delay: 3
-    period: 5
+processes:
+  default:
+    command: geo serve
+    port: 8086
+    health_path: /health
+    readiness:
+      initial_delay: 3
+      period: 5
 
 # Environment variables
 env:
