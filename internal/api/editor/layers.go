@@ -50,8 +50,7 @@ func (h *LayerHandler) ListLayers(ctx context.Context, input *EmptyInput) (*huma
 }
 
 // CreateLayer creates a new layer from Datastar signals and streams updated list.
-// Signal names: newlayername, newlayerfile, newlayerpmtileslayer, newlayergeomtype,
-// newlayerfill, newlayerstroke, newlayeropacity, newlayervisible
+// Signal names are generated - see signals_gen.go for LayerConfigSignalNames.
 func (h *LayerHandler) CreateLayer(ctx context.Context, input *SignalsInput) (*huma.StreamResponse, error) {
 	// Parse Datastar signals from request body
 	signals, err := input.MustParse()
@@ -59,18 +58,8 @@ func (h *LayerHandler) CreateLayer(ctx context.Context, input *SignalsInput) (*h
 		return nil, err
 	}
 
-	// Map Datastar signal names to LayerConfig fields
-	// HTML uses newlayername, newlayerfile, etc.
-	config := service.LayerConfig{
-		Name:           signals.String("newlayername"),
-		File:           signals.String("newlayerfile"),
-		PMTilesLayer:   signals.String("newlayerpmtileslayer"),
-		GeomType:       signals.String("newlayergeomtype"),
-		Fill:           signals.String("newlayerfill"),
-		Stroke:         signals.String("newlayerstroke"),
-		Opacity:        signals.Float("newlayeropacity"),
-		DefaultVisible: signals.Bool("newlayervisible"),
-	}
+	// Use generated parser - type-safe signal → struct mapping
+	config := ParseLayerConfigSignals(signals)
 
 	// Validate required fields
 	if config.Name == "" {
@@ -94,18 +83,11 @@ func (h *LayerHandler) CreateLayer(ctx context.Context, input *SignalsInput) (*h
 			}
 
 			// Reset form signals and show success
-			sse.SendSignals(map[string]any{
-				"success":              fmt.Sprintf("Layer '%s' created", created.Name),
-				"_editingLayer":        false,
-				"newlayername":         "",
-				"newlayerfile":         "",
-				"newlayerpmtileslayer": "default",
-				"newlayergeomtype":     "polygon",
-				"newlayerfill":         "#3388ff",
-				"newlayerstroke":       "#2266cc",
-				"newlayeropacity":      0.7,
-				"newlayervisible":      true,
-			})
+			// Use generated reset - ensures signal names match parser
+			resetSignals := ResetLayerConfigSignals()
+			resetSignals["success"] = fmt.Sprintf("Layer '%s' created", created.Name)
+			resetSignals["_editingLayer"] = false
+			sse.SendSignals(resetSignals)
 
 			layers := h.layerService.List()
 			html := h.renderLayerList(layers)

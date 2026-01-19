@@ -41,10 +41,20 @@ tasks:
       - air
 
   # ===================
+  # CODE GENERATION
+  # ===================
+  gen:
+    desc: Run all code generators (signals + OpenAPI)
+    cmds:
+      - go run ./internal/gen/signals
+      - task huma:spec || true
+
+  # ===================
   # BUILD
   # ===================
   build:
-    desc: Build the binary
+    desc: Build the binary (runs gen first)
+    deps: [gen]
     cmds:
       - mkdir -p {{.BIN_DIR}}
       - go build -o {{.BIN_DIR}}/{{.BINARY}} ./cmd/{{.BINARY}}
