@@ -58,8 +58,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: binaries-${{ matrix.os }}
-          path: ${{ github.workspace }}/.releases/*
+          path: ${{ github.workspace }}/.releases/
           if-no-files-found: error
+          include-hidden-files: true
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')
