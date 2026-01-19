@@ -45,7 +45,10 @@ jobs:
       # Release builds only on tags
       - name: Build release binaries
         if: startsWith(github.ref, 'refs/tags/v')
-        run: xplat task release:build
+        run: |
+          xplat task release:build
+          echo "=== Listing .releases/ ==="
+          ls -la .releases/ || echo "Directory not found"
 
       - name: Upload release artifacts
         if: startsWith(github.ref, 'refs/tags/v')
