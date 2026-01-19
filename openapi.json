@@ -1,0 +1,848 @@
+{
+  "components": {
+    "schemas": {
+      "CreateLayerOutputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "description": "Generated layer ID",
+            "type": "string"
+          },
+          "layer": {
+            "$ref": "#/components/schemas/LayerConfig",
+            "description": "Created layer configuration"
+          },
+          "message": {
+            "description": "Success message",
+            "examples": [
+              "Layer created successfully"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "layer",
+          "message"
+        ],
+        "type": "object"
+      },
+      "DeleteLayerOutputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "message": {
+            "description": "Success message",
+            "examples": [
+              "Layer deleted successfully"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "type": "object"
+      },
+      "ErrorDetail": {
+        "additionalProperties": false,
+        "properties": {
+          "location": {
+            "description": "Where the error occurred, e.g. 'body.items[3].tags' or 'path.thing-id'",
+            "type": "string"
+          },
+          "message": {
+            "description": "Error message text",
+            "type": "string"
+          },
+          "value": {
+            "description": "The value at the given location"
+          }
+        },
+        "type": "object"
+      },
+      "ErrorModel": {
+        "additionalProperties": false,
+        "properties": {
+          "detail": {
+            "description": "A human-readable explanation specific to this occurrence of the problem.",
+            "examples": [
+              "Property foo is required but is missing."
+            ],
+            "type": "string"
+          },
+          "errors": {
+            "description": "Optional list of individual error details",
+            "items": {
+              "$ref": "#/components/schemas/ErrorDetail"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "instance": {
+            "description": "A URI reference that identifies the specific occurrence of the problem.",
+            "examples": [
+              "https://example.com/error-log/abc123"
+            ],
+            "format": "uri",
+            "type": "string"
+          },
+          "status": {
+            "description": "HTTP status code",
+            "examples": [
+              400
+            ],
+            "format": "int64",
+            "type": "integer"
+          },
+          "title": {
+            "description": "A short, human-readable summary of the problem type. This value should not change between occurrences of the error.",
+            "examples": [
+              "Bad Request"
+            ],
+            "type": "string"
+          },
+          "type": {
+            "default": "about:blank",
+            "description": "A URI reference to human-readable documentation for the error.",
+            "examples": [
+              "https://example.com/errors/example"
+            ],
+            "format": "uri",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "HealthBody": {
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "description": "Health status",
+            "examples": [
+              "ok"
+            ],
+            "type": "string"
+          },
+          "version": {
+            "description": "API version",
+            "examples": [
+              "1.0.0"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "version"
+        ],
+        "type": "object"
+      },
+      "InfoOutputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "data_dir": {
+            "description": "Data directory path",
+            "type": "string"
+          },
+          "db": {
+            "description": "Whether database is available",
+            "type": "boolean"
+          },
+          "features": {
+            "description": "Available features",
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "name": {
+            "description": "Service name",
+            "type": "string"
+          },
+          "version": {
+            "description": "Service version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "version",
+          "data_dir",
+          "db",
+          "features"
+        ],
+        "type": "object"
+      },
+      "LayerConfig": {
+        "additionalProperties": false,
+        "properties": {
+          "defaultVisible": {
+            "default": true,
+            "description": "Whether layer is visible by default",
+            "examples": [
+              true
+            ],
+            "type": "boolean"
+          },
+          "file": {
+            "description": "Source file name",
+            "examples": [
+              "buildings.pmtiles"
+            ],
+            "type": "string"
+          },
+          "fill": {
+            "description": "Fill color (CSS)",
+            "examples": [
+              "#3388ff"
+            ],
+            "type": "string"
+          },
+          "geomType": {
+            "description": "Geometry type",
+            "enum": [
+              "polygon",
+              "line",
+              "point"
+            ],
+            "examples": [
+              "polygon"
+            ],
+            "type": "string"
+          },
+          "id": {
+            "description": "Unique layer identifier",
+            "examples": [
+              "buildings"
+            ],
+            "type": "string"
+          },
+          "legend": {
+            "description": "Legend entries for this layer",
+            "items": {
+              "$ref": "#/components/schemas/LegendItem"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "name": {
+            "description": "Display name",
+            "examples": [
+              "Buildings"
+            ],
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          },
+          "opacity": {
+            "default": 0.7,
+            "description": "Layer opacity (0-1)",
+            "examples": [
+              0.7
+            ],
+            "format": "double",
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "pmtilesLayer": {
+            "description": "Layer name within PMTiles",
+            "examples": [
+              "buildings"
+            ],
+            "type": "string"
+          },
+          "renderRules": {
+            "description": "Conditional styling rules",
+            "items": {
+              "$ref": "#/components/schemas/RenderRule"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "stroke": {
+            "description": "Stroke color (CSS)",
+            "examples": [
+              "#2266cc"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "file",
+          "geomType",
+          "defaultVisible"
+        ],
+        "type": "object"
+      },
+      "LegendItem": {
+        "additionalProperties": false,
+        "properties": {
+          "color": {
+            "description": "Legend color (CSS)",
+            "type": "string"
+          },
+          "label": {
+            "description": "Legend label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "color"
+        ],
+        "type": "object"
+      },
+      "QueryInputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "query": {
+            "description": "SQL query to execute",
+            "type": "string"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "type": "object"
+      },
+      "QueryOutputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "columns": {
+            "description": "Column names",
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "count": {
+            "description": "Number of rows returned",
+            "format": "int64",
+            "type": "integer"
+          },
+          "rows": {
+            "description": "Query results",
+            "items": {
+              "additionalProperties": {},
+              "type": "object"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "columns",
+          "rows",
+          "count"
+        ],
+        "type": "object"
+      },
+      "RenderRule": {
+        "additionalProperties": false,
+        "properties": {
+          "fill": {
+            "description": "Fill color (CSS)",
+            "type": "string"
+          },
+          "filterProp": {
+            "description": "Property name to filter on",
+            "type": "string"
+          },
+          "filterValue": {
+            "description": "Value to match",
+            "type": "string"
+          },
+          "opacity": {
+            "description": "Opacity (0-1)",
+            "format": "double",
+            "type": "number"
+          },
+          "radius": {
+            "description": "Point radius",
+            "format": "double",
+            "type": "number"
+          },
+          "stroke": {
+            "description": "Stroke color (CSS)",
+            "type": "string"
+          },
+          "width": {
+            "description": "Line width",
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": [
+          "fill"
+        ],
+        "type": "object"
+      },
+      "SourceFile": {
+        "additionalProperties": false,
+        "properties": {
+          "fileType": {
+            "description": "File type: GeoJSON or GeoParquet",
+            "examples": [
+              "GeoJSON"
+            ],
+            "type": "string"
+          },
+          "name": {
+            "description": "File name",
+            "examples": [
+              "buildings.geojson"
+            ],
+            "type": "string"
+          },
+          "size": {
+            "description": "Human-readable file size",
+            "examples": [
+              "1.2 MB"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "size",
+          "fileType"
+        ],
+        "type": "object"
+      },
+      "TablesOutputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "tables": {
+            "description": "List of table names",
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "tables"
+        ],
+        "type": "object"
+      },
+      "TileFile": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "description": "PMTiles file name",
+            "examples": [
+              "buildings.pmtiles"
+            ],
+            "type": "string"
+          },
+          "size": {
+            "description": "Human-readable file size",
+            "examples": [
+              "5.4 MB"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "size"
+        ],
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "description": "Geospatial data platform API for managing map layers, tiles, and sources.",
+    "title": "plat-geo API",
+    "version": "1.0.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/info": {
+      "get": {
+        "operationId": "get-api-v1-info",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InfoOutputBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Get API v1 info"
+      }
+    },
+    "/api/v1/layers": {
+      "get": {
+        "operationId": "get-api-v1-layers",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/LayerConfig"
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Get API v1 layers"
+      },
+      "post": {
+        "operationId": "post-api-v1-layers",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LayerConfig"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateLayerOutputBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Post API v1 layers"
+      }
+    },
+    "/api/v1/layers/{id}": {
+      "delete": {
+        "operationId": "delete-api-v1-layers-by-id",
+        "parameters": [
+          {
+            "description": "Layer ID to delete",
+            "example": "buildings",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Layer ID to delete",
+              "examples": [
+                "buildings"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteLayerOutputBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Delete API v1 layers by ID"
+      },
+      "get": {
+        "operationId": "get-api-v1-layers-by-id",
+        "parameters": [
+          {
+            "description": "Layer ID",
+            "example": "buildings",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Layer ID",
+              "examples": [
+                "buildings"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LayerConfig"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Get API v1 layers by ID"
+      }
+    },
+    "/api/v1/query": {
+      "post": {
+        "operationId": "post-api-v1-query",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueryInputBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryOutputBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Post API v1 query"
+      }
+    },
+    "/api/v1/sources": {
+      "get": {
+        "operationId": "list-api-v1-sources",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SourceFile"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "List API v1 sources"
+      }
+    },
+    "/api/v1/tables": {
+      "get": {
+        "operationId": "get-api-v1-tables",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TablesOutputBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Get API v1 tables"
+      }
+    },
+    "/api/v1/tiles": {
+      "get": {
+        "operationId": "list-api-v1-tiles",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TileFile"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "List API v1 tiles"
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "get-health",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Get health"
+      }
+    }
+  },
+  "servers": [
+    {
+      "description": "Local server",
+      "url": "http://localhost:8086"
+    }
+  ],
+  "tags": [
+    {
+      "description": "Layer management operations",
+      "name": "layers"
+    },
+    {
+      "description": "Tile serving and management",
+      "name": "tiles"
+    },
+    {
+      "description": "Source file management",
+      "name": "sources"
+    },
+    {
+      "description": "Health check endpoints",
+      "name": "health"
+    }
+  ]
+}
