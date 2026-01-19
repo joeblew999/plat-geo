@@ -2,7 +2,7 @@ apiVersion: xplat/v1
 kind: Package
 
 name: plat-geo
-version: 0.1.0
+version: dev
 description: Geographical system for maps and routing with GeoParquet and PMTiles support
 author: joeblew999
 license: MIT
@@ -11,7 +11,12 @@ license: MIT
 binary:
   name: geo
   source:
+    # Primary: build from source if Go is available
     go: github.com/joeblew999/plat-geo/cmd/geo
+    # Fallback: download from GitHub releases
+    github:
+      repo: joeblew999/plat-geo
+      asset: geo-{{.OS}}-{{.ARCH}}
 
 # Taskfile remote include configuration
 taskfile:

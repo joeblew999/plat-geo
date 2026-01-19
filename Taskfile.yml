@@ -125,12 +125,12 @@ tasks:
       - cp -n testdata/*.geojson {{.DATA_DIR}}/sources/ 2>/dev/null || true
 
   # ===================
-  # INSTALL
+  # INSTALL (uses xplat.yaml manifest as SSOT)
   # ===================
   install:
-    desc: Install binary locally via xplat
+    desc: Install binary from manifest (go install or GitHub release)
     cmds:
-      - xplat binary install {{.BINARY}} v0.1.0 joeblew999/plat-geo --source ./cmd/{{.BINARY}} --force
+      - xplat manifest install --force
 
   install:go:
     desc: Install binary to GOPATH/bin
