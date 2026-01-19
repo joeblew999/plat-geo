@@ -138,19 +138,16 @@ tasks:
       - go install ./cmd/{{.BINARY}}
 
   # ===================
-  # RELEASE
+  # RELEASE (called by CI on tags)
+  # CI builds on each platform natively, so we just build for current platform
   # ===================
   release:build:
-    desc: Build release binaries for all platforms
-    cmds:
-      - xplat release build {{.BINARY}}
-
-  release:build:current:
     desc: Build release binary for current platform
     cmds:
-      - xplat release build {{.BINARY}} --current
+      - mkdir -p .releases
+      - go build -ldflags="-s -w" -o .releases/{{.BINARY}}-{{OS}}-{{ARCH}}{{exeExt}} ./cmd/{{.BINARY}}
 
   release:list:
     desc: List built release binaries
     cmds:
-      - xplat release list {{.BINARY}}
+      - ls -la .releases/ 2>/dev/null || echo "No releases built yet"
