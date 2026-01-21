@@ -24,10 +24,12 @@ This project uses a multi-phase code generation strategy to maintain type safety
     ┌──────────┐        ┌──────────┐        ┌──────────┐
     │ Phase 1  │        │ Phase 2  │        │ Phase 3  │
     │ Signals  │        │ OpenAPI  │        │ TypeScript│
+    │ (editor) │        │ (spec)   │        │ (JS/TS)  │
     └────┬─────┘        └────┬─────┘        └────┬─────┘
          │                   │                   │
          ▼                   ▼                   ▼
    signals_gen.go      openapi.json          api.ts
+   (Datastar forms)    (API docs)      (custom JS + clients)
 ```
 
 ## Phase 1: Signal Generation
@@ -196,11 +198,20 @@ go run ./cmd/geo spec --format yaml --output openapi.yaml
 
 ## Phase 3: TypeScript Generation
 
-**Purpose**: Generate TypeScript types from OpenAPI spec
+**Purpose**: Generate TypeScript types for external API consumers
 
 **Source**: `openapi.json` (from Phase 2)
 
-**Output**: `web/src/generated/api.ts`
+**Output**: `web/src/generated/api.ts`, `web/src/generated/client.ts`
+
+### Who Uses This?
+
+1. **Custom JS alongside Datastar** - When you need logic beyond what directives handle
+2. **External API clients** - TypeScript apps consuming the REST API
+3. **Mobile apps** - React Native or other TS-based mobile clients
+4. **CLI tools** - Node.js scripts interacting with the API
+
+Datastar handles most UI interactions via directives (`@get()`, `@post()`, `data-bind`), but when you need custom JavaScript - complex validations, map integrations, charting libraries - the TypeScript types ensure type safety.
 
 ### What It Does
 
@@ -251,6 +262,52 @@ task huma:ts
 
 # Directly (requires openapi-typescript)
 npx openapi-typescript openapi.json -o web/src/generated/api.ts
+```
+
+### Usage Example (With Datastar)
+
+```typescript
+// Custom JS that works alongside Datastar directives
+import { api, LayerConfig } from './generated/client';
+
+// Fetch data and update Datastar signals programmatically
+async function loadLayerForMap(id: string) {
+  const { data } = await api.GET('/api/v1/layers/{id}', {
+    params: { path: { id } }
+  });
+
+  // Update Datastar signals from JS
+  if (data) {
+    window.ds.signals.currentLayer = data.name;
+    renderLayerOnMap(data);  // Custom map logic
+  }
+}
+```
+
+### Usage Example (External Client)
+
+```typescript
+// In a separate TypeScript project consuming this API
+import { api, LayerConfig } from './generated/client';
+
+// GET /api/v1/layers - fully typed response
+const { data, error } = await api.GET('/api/v1/layers');
+if (data) {
+  Object.entries(data).forEach(([id, layer]) => {
+    console.log(layer.name, layer.geomType);  // TypeScript knows the shape
+  });
+}
+
+// POST /api/v1/layers - request body is type-checked
+const { data: created } = await api.POST('/api/v1/layers', {
+  body: {
+    name: 'Buildings',
+    file: 'buildings.pmtiles',
+    geomType: 'polygon',  // TypeScript enforces: 'polygon' | 'line' | 'point'
+    defaultVisible: true,
+    opacity: 0.7,
+  }
+});
 ```
 
 ## Complete Generation Pipeline

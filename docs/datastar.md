@@ -28,6 +28,45 @@ Signals are reactive state variables that sync between HTML and JavaScript:
 - Prefixed with `_` = local-only (not sent to server)
 - No prefix = sent with `@post()` / `@get()` requests
 
+### Signals from JavaScript
+
+Datastar signals are accessible from custom JavaScript via `window.ds.signals`:
+
+```typescript
+// Read signals
+const layerName = window.ds.signals.newlayername;
+const isEditing = window.ds.signals._editingLayer;
+
+// Write signals (UI updates reactively)
+window.ds.signals.newlayername = 'Buildings';
+window.ds.signals.success = 'Layer loaded!';
+window.ds.signals._activeTab = 'tiles';
+```
+
+This bridges Datastar with custom JS code (maps, charts, etc.). See [Code Generation Phase 3](./codegen.md#phase-3-typescript-generation) for typed API access.
+
+**Example: Map integration with typed API**
+
+```typescript
+import { api, LayerConfig } from './generated/client';
+
+// Fetch typed data, update Datastar signals, render on map
+async function loadLayer(id: string) {
+  const { data } = await api.GET('/api/v1/layers/{id}', {
+    params: { path: { id } }
+  });
+
+  if (data) {
+    // Update Datastar UI via signals
+    window.ds.signals.currentLayerName = data.name;
+    window.ds.signals._loading = false;
+
+    // Use typed data in map library
+    renderLayerOnMap(data);
+  }
+}
+```
+
 ### Two-Way Binding
 
 ```html
