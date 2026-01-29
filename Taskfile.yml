@@ -8,22 +8,28 @@ vars:
 
 includes:
   huma:
-    taskfile: taskfiles/Taskfile-huma.yml
+    taskfile: taskfiles/huma.yml
+    optional: true
+  restish:
+    taskfile: taskfiles/restish.yml
     optional: true
   duckdb:
-    taskfile: taskfiles/Taskfile-duckdb.yml
-    optional: true
-  ducklake:
-    taskfile: taskfiles/Taskfile-ducklake.yml
+    taskfile: taskfiles/duckdb.yml
     optional: true
   nornicdb:
-    taskfile: taskfiles/Taskfile-nornicdb.yml
+    taskfile: taskfiles/nornicdb.yml
     optional: true
   pmtiles:
-    taskfile: taskfiles/Taskfile-pmtiles.yml
+    taskfile: taskfiles/pmtiles.yml
     optional: true
   tippecanoe:
-    taskfile: taskfiles/Taskfile-tippecanoe.yml
+    taskfile: taskfiles/tippecanoe.yml
+    optional: true
+  service:
+    taskfile: taskfiles/service.yml
+    optional: true
+  src:
+    taskfile: taskfiles/src.yml
     optional: true
 
 tasks:
@@ -32,56 +38,23 @@ tasks:
     cmds:
       - task --list
 
-  # ===================
-  # DEVELOPMENT - ONE WAY: task dev
-  # ===================
   dev:
-    desc: Run dev server with hot reload and codegen
+    desc: Run dev server with hot reload
     cmds:
       - air
 
-  # ===================
-  # CODE GENERATION
-  # ===================
-  gen:
-    desc: Run all code generators (signals + OpenAPI)
-    cmds:
-      - go run ./internal/gen/signals
-      - task huma:spec || true
-
-  # ===================
-  # BUILD
-  # ===================
   build:
-    desc: Build the binary (runs gen first)
-    deps: [gen]
+    desc: Build the binary
+    deps: [huma:gen]
     cmds:
       - mkdir -p {{.BIN_DIR}}
       - go build -o {{.BIN_DIR}}/{{.BINARY}} ./cmd/{{.BINARY}}
 
-  build:release:
-    desc: Build optimized release binary
-    cmds:
-      - mkdir -p {{.BIN_DIR}}
-      - CGO_ENABLED=0 go build -ldflags="-s -w" -o {{.BIN_DIR}}/{{.BINARY}} ./cmd/{{.BINARY}}
-
-  # ===================
-  # TESTING
-  # ===================
   test:
     desc: Run tests
     cmds:
-      - go test -v ./...
+      - go test ./...
 
-  test:coverage:
-    desc: Run tests with coverage
-    cmds:
-      - go test -coverprofile=coverage.out ./...
-      - go tool cover -html=coverage.out -o coverage.html
-
-  # ===================
-  # CODE QUALITY
-  # ===================
   lint:
     desc: Run linter
     cmds:
@@ -93,61 +66,13 @@ tasks:
       - go fmt ./...
       - goimports -w .
 
-  # ===================
-  # DEPENDENCIES
-  # ===================
-  deps:
-    desc: Download dependencies
-    cmds:
-      - go mod download
-
-  deps:tidy:
-    desc: Tidy dependencies
-    cmds:
-      - go mod tidy
-
-  # ===================
-  # CLEAN
-  # ===================
   clean:
     desc: Clean build artifacts
     cmds:
       - rm -rf {{.BIN_DIR}} .tmp
       - rm -f coverage.out coverage.html openapi.json openapi.yaml
 
-  # ===================
-  # DATA
-  # ===================
-  data:init:
-    desc: Initialize data directory with sample files
-    cmds:
-      - mkdir -p {{.DATA_DIR}}/tiles {{.DATA_DIR}}/sources
-      - cp -n testdata/*.geojson {{.DATA_DIR}}/sources/ 2>/dev/null || true
-
-  # ===================
-  # INSTALL (uses xplat.yaml manifest as SSOT)
-  # ===================
   install:
-    desc: Install binary from manifest (go install or GitHub release)
+    desc: Install binary from manifest
     cmds:
       - xplat manifest install --force
-
-  install:go:
-    desc: Install binary to GOPATH/bin
-    cmds:
-      - go install ./cmd/{{.BINARY}}
-
-  # ===================
-  # RELEASE (called by CI on tags)
-  # CI builds on each platform natively, so we just build for current platform
-  # ===================
-  release:build:
-    desc: Build release binary for current platform
-    cmds:
-      - mkdir -p .releases
-      - go build -ldflags="-s -w" -o .releases/{{.BINARY}}-{{OS}}-{{ARCH}}{{exeExt}} ./cmd/{{.BINARY}}
-
-  release:list:
-    desc: List built release binaries
-    cmds:
-      - ls -la .releases/ 2>/dev/null || echo "No releases built yet"

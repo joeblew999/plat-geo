@@ -15,175 +15,148 @@ type Services struct {
 	Source *service.SourceService
 }
 
-var svc *Services
+// Types
 
-// RegisterRoutes registers all API routes with the Huma API.
-func RegisterRoutes(api huma.API, services *Services) {
-	svc = services
-
-	api.OpenAPI().Tags = append(api.OpenAPI().Tags,
-		&huma.Tag{Name: "layers", Description: "Layer management operations"},
-		&huma.Tag{Name: "tiles", Description: "Tile serving and management"},
-		&huma.Tag{Name: "sources", Description: "Source file management"},
-		&huma.Tag{Name: "health", Description: "Health check endpoints"},
-	)
-
-	huma.Get(api, "/health", GetHealth)
-	huma.Get(api, "/api/v1/layers", GetLayers)
-	huma.Post(api, "/api/v1/layers", CreateLayer)
-	huma.Get(api, "/api/v1/layers/{id}", GetLayer)
-	huma.Delete(api, "/api/v1/layers/{id}", DeleteLayer)
-	huma.Get(api, "/api/v1/sources", GetSources)
-	huma.Get(api, "/api/v1/tiles", GetTiles)
+type IDInput struct {
+	ID string `path:"id" doc:"Layer ID" example:"buildings"`
 }
 
-// ==================== Health ====================
+type LayerOutput struct {
+	Body service.LayerConfig
+}
+
+type LayersOutput struct {
+	Body map[string]service.LayerConfig
+}
+
+type MessageBody struct {
+	Message string `json:"message" doc:"Result message"`
+}
+
+type CreatedLayerBody struct {
+	ID      string              `json:"id" doc:"Generated layer ID"`
+	Layer   service.LayerConfig `json:"layer" doc:"Created layer configuration"`
+	Message string              `json:"message" doc:"Result message"`
+}
 
 type HealthBody struct {
 	Status  string `json:"status" doc:"Health status" example:"ok"`
 	Version string `json:"version" doc:"API version" example:"1.0.0"`
 }
 
-type HealthOutput struct {
-	Body HealthBody
+// APIHandler holds all REST API handlers. Methods named Register* are
+// auto-discovered by huma.AutoRegister.
+type APIHandler struct {
+	svc *Services
 }
 
-func GetHealth(ctx context.Context, input *struct{}) (*HealthOutput, error) {
-	return &HealthOutput{
-		Body: HealthBody{Status: "ok", Version: "1.0.0"},
-	}, nil
+func NewAPIHandler(svc *Services) *APIHandler {
+	return &APIHandler{svc: svc}
 }
 
-// ==================== Layers ====================
-// Uses service.LayerConfig directly - DRY!
-
-type GetLayersOutput struct {
-	Body map[string]service.LayerConfig
+// RegisterHealth registers health check routes.
+func (h *APIHandler) RegisterHealth(api huma.API) {
+	huma.Get(api, "/health", h.GetHealth, huma.OperationTags("health"))
 }
 
-func GetLayers(ctx context.Context, input *struct{}) (*GetLayersOutput, error) {
-	if svc == nil || svc.Layer == nil {
-		return &GetLayersOutput{Body: map[string]service.LayerConfig{}}, nil
+// RegisterLayers registers layer CRUD routes.
+func (h *APIHandler) RegisterLayers(api huma.API) {
+	huma.Get(api, "/api/v1/layers", h.GetLayers, huma.OperationTags("layers"))
+	huma.Post(api, "/api/v1/layers", h.CreateLayer, huma.OperationTags("layers"))
+	huma.Get(api, "/api/v1/layers/{id}", h.GetLayer, huma.OperationTags("layers"))
+	huma.Put(api, "/api/v1/layers/{id}", h.PutLayer, huma.OperationTags("layers"))
+	huma.Delete(api, "/api/v1/layers/{id}", h.DeleteLayer, huma.OperationTags("layers"))
+}
+
+// RegisterSources registers source listing routes.
+func (h *APIHandler) RegisterSources(api huma.API) {
+	huma.Get(api, "/api/v1/sources", h.GetSources, huma.OperationTags("sources"))
+}
+
+// RegisterTiles registers tile listing routes.
+func (h *APIHandler) RegisterTiles(api huma.API) {
+	huma.Get(api, "/api/v1/tiles", h.GetTiles, huma.OperationTags("tiles"))
+}
+
+// Handlers
+
+func (h *APIHandler) GetHealth(ctx context.Context, input *struct{}) (*struct{ Body HealthBody }, error) {
+	return &struct{ Body HealthBody }{Body: HealthBody{Status: "ok", Version: "1.0.0"}}, nil
+}
+
+func (h *APIHandler) GetLayers(ctx context.Context, input *struct{}) (*LayersOutput, error) {
+	if h.svc == nil || h.svc.Layer == nil {
+		return &LayersOutput{Body: map[string]service.LayerConfig{}}, nil
 	}
-	return &GetLayersOutput{Body: svc.Layer.List()}, nil
+	return &LayersOutput{Body: h.svc.Layer.List()}, nil
 }
 
-// CreateLayerInput uses service.LayerConfig directly for the body.
-// Huma reads validation tags (required, minLength, etc.) from service.LayerConfig.
-type CreateLayerInput struct {
-	Body service.LayerConfig
-}
-
-type CreateLayerOutput struct {
-	Body struct {
-		ID      string              `json:"id" doc:"Generated layer ID"`
-		Layer   service.LayerConfig `json:"layer" doc:"Created layer configuration"`
-		Message string              `json:"message" doc:"Success message" example:"Layer created successfully"`
-	}
-}
-
-func CreateLayer(ctx context.Context, input *CreateLayerInput) (*CreateLayerOutput, error) {
-	if svc == nil || svc.Layer == nil {
+func (h *APIHandler) CreateLayer(ctx context.Context, input *struct{ Body service.LayerConfig }) (*struct{ Body CreatedLayerBody }, error) {
+	if h.svc == nil || h.svc.Layer == nil {
 		return nil, huma.Error400BadRequest("service not available")
 	}
-
-	created, err := svc.Layer.Create(input.Body)
+	created, err := h.svc.Layer.Create(input.Body)
 	if err != nil {
 		return nil, huma.Error400BadRequest(err.Error())
 	}
-
-	return &CreateLayerOutput{
-		Body: struct {
-			ID      string              `json:"id" doc:"Generated layer ID"`
-			Layer   service.LayerConfig `json:"layer" doc:"Created layer configuration"`
-			Message string              `json:"message" doc:"Success message" example:"Layer created successfully"`
-		}{
-			ID:      created.ID,
-			Layer:   created,
-			Message: "Layer created successfully",
-		},
-	}, nil
+	return &struct{ Body CreatedLayerBody }{Body: CreatedLayerBody{
+		ID: created.ID, Layer: created, Message: "Layer created",
+	}}, nil
 }
 
-type GetLayerInput struct {
-	ID string `path:"id" doc:"Layer ID" example:"buildings"`
-}
-
-type GetLayerOutput struct {
-	Body service.LayerConfig
-}
-
-func GetLayer(ctx context.Context, input *GetLayerInput) (*GetLayerOutput, error) {
-	if svc == nil || svc.Layer == nil {
+func (h *APIHandler) GetLayer(ctx context.Context, input *IDInput) (*LayerOutput, error) {
+	if h.svc == nil || h.svc.Layer == nil {
 		return nil, huma.Error404NotFound("service not available")
 	}
-
-	layer, ok := svc.Layer.Get(input.ID)
+	layer, ok := h.svc.Layer.Get(input.ID)
 	if !ok {
 		return nil, huma.Error404NotFound("layer not found")
 	}
-
-	return &GetLayerOutput{Body: layer}, nil
+	return &LayerOutput{Body: layer}, nil
 }
 
-type DeleteLayerInput struct {
-	ID string `path:"id" doc:"Layer ID to delete" example:"buildings"`
-}
-
-type DeleteLayerOutput struct {
-	Body struct {
-		Message string `json:"message" doc:"Success message" example:"Layer deleted successfully"`
-	}
-}
-
-func DeleteLayer(ctx context.Context, input *DeleteLayerInput) (*DeleteLayerOutput, error) {
-	if svc == nil || svc.Layer == nil {
+func (h *APIHandler) PutLayer(ctx context.Context, input *struct {
+	IDInput
+	Body service.LayerConfig
+}) (*LayerOutput, error) {
+	if h.svc == nil || h.svc.Layer == nil {
 		return nil, huma.Error400BadRequest("service not available")
 	}
-
-	if err := svc.Layer.Delete(input.ID); err != nil {
+	updated, err := h.svc.Layer.Update(input.ID, input.Body)
+	if err != nil {
 		return nil, huma.Error404NotFound(err.Error())
 	}
-
-	return &DeleteLayerOutput{
-		Body: struct {
-			Message string `json:"message" doc:"Success message" example:"Layer deleted successfully"`
-		}{Message: "Layer deleted successfully"},
-	}, nil
+	return &LayerOutput{Body: updated}, nil
 }
 
-// ==================== Sources ====================
-
-type GetSourcesOutput struct {
-	Body []service.SourceFile
-}
-
-func GetSources(ctx context.Context, input *struct{}) (*GetSourcesOutput, error) {
-	if svc == nil || svc.Source == nil {
-		return &GetSourcesOutput{Body: []service.SourceFile{}}, nil
+func (h *APIHandler) DeleteLayer(ctx context.Context, input *IDInput) (*struct{ Body MessageBody }, error) {
+	if h.svc == nil || h.svc.Layer == nil {
+		return nil, huma.Error400BadRequest("service not available")
 	}
+	if err := h.svc.Layer.Delete(input.ID); err != nil {
+		return nil, huma.Error404NotFound(err.Error())
+	}
+	return &struct{ Body MessageBody }{Body: MessageBody{Message: "Layer deleted"}}, nil
+}
 
-	sources, err := svc.Source.List()
+func (h *APIHandler) GetSources(ctx context.Context, input *struct{}) (*struct{ Body []service.SourceFile }, error) {
+	if h.svc == nil || h.svc.Source == nil {
+		return &struct{ Body []service.SourceFile }{Body: []service.SourceFile{}}, nil
+	}
+	sources, err := h.svc.Source.List()
 	if err != nil {
-		return &GetSourcesOutput{Body: []service.SourceFile{}}, nil
+		return &struct{ Body []service.SourceFile }{Body: []service.SourceFile{}}, nil
 	}
-	return &GetSourcesOutput{Body: sources}, nil
+	return &struct{ Body []service.SourceFile }{Body: sources}, nil
 }
 
-// ==================== Tiles ====================
-
-type GetTilesOutput struct {
-	Body []service.TileFile
-}
-
-func GetTiles(ctx context.Context, input *struct{}) (*GetTilesOutput, error) {
-	if svc == nil || svc.Tile == nil {
-		return &GetTilesOutput{Body: []service.TileFile{}}, nil
+func (h *APIHandler) GetTiles(ctx context.Context, input *struct{}) (*struct{ Body []service.TileFile }, error) {
+	if h.svc == nil || h.svc.Tile == nil {
+		return &struct{ Body []service.TileFile }{Body: []service.TileFile{}}, nil
 	}
-
-	tiles, err := svc.Tile.List()
+	tiles, err := h.svc.Tile.List()
 	if err != nil {
-		return &GetTilesOutput{Body: []service.TileFile{}}, nil
+		return &struct{ Body []service.TileFile }{Body: []service.TileFile{}}, nil
 	}
-	return &GetTilesOutput{Body: tiles}, nil
+	return &struct{ Body []service.TileFile }{Body: tiles}, nil
 }

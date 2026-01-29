@@ -45,7 +45,7 @@ tasks:
   health:
     desc: Check plat-geo service health endpoint
     cmds:
-      - curl -s http://{{ .GEO_HOST | default "127.0.0.1" }}:{{ .GEO_PORT }}/health | jq . || echo "plat-geo: not responding"
+      - 'curl -s http://{{ .GEO_HOST | default "127.0.0.1" }}:{{ .GEO_PORT }}/health | jq . || echo "plat-geo: not responding"'
 
   restart:
     desc: Restart the plat-geo service

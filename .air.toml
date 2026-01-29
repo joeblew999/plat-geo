@@ -3,8 +3,8 @@ tmp_dir = ".bin"
 
 [build]
   bin = "./.bin/geo"
-  args_bin = ["serve"]
-  cmd = "task build && task huma:all"
+  args_bin = []
+  cmd = "task build"
   delay = 500
   exclude_dir = [".bin", ".data", ".tmp", ".git", ".src", "vendor", "node_modules", "web"]
   exclude_regex = ["_test.go"]

@@ -4,6 +4,177 @@
  */
 
 export interface paths {
+    "/api/v1/editor/layers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get API v1 editor layers */
+        get: operations["get-api-v1-editor-layers"];
+        put?: never;
+        /** Post API v1 editor layers */
+        post: operations["post-api-v1-editor-layers"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/editor/layers/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete API v1 editor layers by ID */
+        delete: operations["delete-api-v1-editor-layers-by-id"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/editor/sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get API v1 editor sources */
+        get: operations["get-api-v1-editor-sources"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/editor/sources/list": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get API v1 editor sources list */
+        get: operations["get-api-v1-editor-sources-list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/editor/sources/select": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get API v1 editor sources select */
+        get: operations["get-api-v1-editor-sources-select"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/editor/sources/upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post API v1 editor sources upload */
+        post: operations["post-api-v1-editor-sources-upload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/editor/sources/{filename}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete API v1 editor sources by filename */
+        delete: operations["delete-api-v1-editor-sources-by-filename"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/editor/tiles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get API v1 editor tiles */
+        get: operations["get-api-v1-editor-tiles"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/editor/tiles/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post API v1 editor tiles generate */
+        post: operations["post-api-v1-editor-tiles-generate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/editor/tiles/select": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get API v1 editor tiles select */
+        get: operations["get-api-v1-editor-tiles-select"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/info": {
         parameters: {
             query?: never;
@@ -48,13 +219,18 @@ export interface paths {
         };
         /** Get API v1 layers by ID */
         get: operations["get-api-v1-layers-by-id"];
-        put?: never;
+        /** Put API v1 layers by ID */
+        put: operations["put-api-v1-layers-by-id"];
         post?: never;
         /** Delete API v1 layers by ID */
         delete: operations["delete-api-v1-layers-by-id"];
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Patch api-v-1-layers-by-id
+         * @description Partial update operation supporting both JSON Merge Patch & JSON Patch updates.
+         */
+        patch: operations["patch-api-v-1-layers-by-id"];
         trace?: never;
     };
     "/api/v1/query": {
@@ -146,22 +322,18 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        CreateLayerOutputBody: {
+        CreatedLayerBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example http://0.0.0.0:8086/schemas/CreatedLayerBody.json
+             */
+            readonly $schema?: string;
             /** @description Generated layer ID */
             id: string;
             /** @description Created layer configuration */
             layer: components["schemas"]["LayerConfig"];
-            /**
-             * @description Success message
-             * @example Layer created successfully
-             */
-            message: string;
-        };
-        DeleteLayerOutputBody: {
-            /**
-             * @description Success message
-             * @example Layer deleted successfully
-             */
+            /** @description Result message */
             message: string;
         };
         ErrorDetail: {
@@ -173,6 +345,12 @@ export interface components {
             value?: unknown;
         };
         ErrorModel: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example http://0.0.0.0:8086/schemas/ErrorModel.json
+             */
+            readonly $schema?: string;
             /**
              * @description A human-readable explanation specific to this occurrence of the problem.
              * @example Property foo is required but is missing.
@@ -207,6 +385,12 @@ export interface components {
         };
         HealthBody: {
             /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example http://0.0.0.0:8086/schemas/HealthBody.json
+             */
+            readonly $schema?: string;
+            /**
              * @description Health status
              * @example ok
              */
@@ -217,7 +401,13 @@ export interface components {
              */
             version: string;
         };
-        InfoOutputBody: {
+        InfoBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example http://0.0.0.0:8086/schemas/InfoBody.json
+             */
+            readonly $schema?: string;
             /** @description Data directory path */
             data_dir: string;
             /** @description Whether database is available */
@@ -229,7 +419,26 @@ export interface components {
             /** @description Service version */
             version: string;
         };
+        JsonPatchOp: {
+            /** @description JSON Pointer for the source of a move or copy */
+            from?: string;
+            /**
+             * @description Operation name
+             * @enum {string}
+             */
+            op: "add" | "remove" | "replace" | "move" | "copy" | "test";
+            /** @description JSON Pointer to the field being operated on, or the destination of a move/copy operation */
+            path: string;
+            /** @description The value to set */
+            value?: unknown;
+        };
         LayerConfig: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example http://0.0.0.0:8086/schemas/LayerConfig.json
+             */
+            readonly $schema?: string;
             /**
              * @description Whether layer is visible by default
              * @default true
@@ -243,11 +452,13 @@ export interface components {
             file: string;
             /**
              * @description Fill color (CSS)
+             * @default #3388ff
              * @example #3388ff
              */
-            fill?: string;
+            fill: string;
             /**
              * @description Geometry type
+             * @default polygon
              * @example polygon
              * @enum {string}
              */
@@ -273,16 +484,18 @@ export interface components {
             opacity: number;
             /**
              * @description Layer name within PMTiles
+             * @default default
              * @example buildings
              */
-            pmtilesLayer?: string;
+            pmtilesLayer: string;
             /** @description Conditional styling rules */
             renderRules?: components["schemas"]["RenderRule"][] | null;
             /**
              * @description Stroke color (CSS)
+             * @default #2266cc
              * @example #2266cc
              */
-            stroke?: string;
+            stroke: string;
         };
         LegendItem: {
             /** @description Legend color (CSS) */
@@ -290,11 +503,33 @@ export interface components {
             /** @description Legend label */
             label: string;
         };
-        QueryInputBody: {
+        MessageBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example http://0.0.0.0:8086/schemas/MessageBody.json
+             */
+            readonly $schema?: string;
+            /** @description Result message */
+            message: string;
+        };
+        "Post-api-v1-queryRequest": {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example http://0.0.0.0:8086/schemas/Post-api-v1-queryRequest.json
+             */
+            readonly $schema?: string;
             /** @description SQL query to execute */
             query: string;
         };
-        QueryOutputBody: {
+        QueryBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example http://0.0.0.0:8086/schemas/QueryBody.json
+             */
+            readonly $schema?: string;
             /** @description Column names */
             columns: string[] | null;
             /**
@@ -349,7 +584,13 @@ export interface components {
              */
             size: string;
         };
-        TablesOutputBody: {
+        TablesBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example http://0.0.0.0:8086/schemas/TablesBody.json
+             */
+            readonly $schema?: string;
             /** @description List of table names */
             tables: string[] | null;
         };
@@ -374,6 +615,329 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    "get-api-v1-editor-layers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "post-api-v1-editor-layers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/octet-stream": string;
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "delete-api-v1-editor-layers-by-id": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Layer ID to delete */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-api-v1-editor-sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-api-v1-editor-sources-list": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-api-v1-editor-sources-select": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "post-api-v1-editor-sources-upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /**
+                     * Format: binary
+                     * @description filename of the file being uploaded
+                     */
+                    filename?: string;
+                    /** @description general purpose name for multipart form value */
+                    name?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "delete-api-v1-editor-sources-by-filename": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Source filename to delete */
+                filename: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-api-v1-editor-tiles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "post-api-v1-editor-tiles-generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/octet-stream": string;
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-api-v1-editor-tiles-select": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "get-api-v1-info": {
         parameters: {
             query?: never;
@@ -389,7 +953,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["InfoOutputBody"];
+                    "application/json": components["schemas"]["InfoBody"];
                 };
             };
             /** @description Error */
@@ -453,7 +1017,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CreateLayerOutputBody"];
+                    "application/json": components["schemas"]["CreatedLayerBody"];
                 };
             };
             /** @description Error */
@@ -502,13 +1066,52 @@ export interface operations {
             };
         };
     };
+    "put-api-v1-layers-by-id": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description Layer ID
+                 * @example buildings
+                 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LayerConfig"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LayerConfig"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "delete-api-v1-layers-by-id": {
         parameters: {
             query?: never;
             header?: never;
             path: {
                 /**
-                 * @description Layer ID to delete
+                 * @description Layer ID
                  * @example buildings
                  */
                 id: string;
@@ -523,7 +1126,176 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DeleteLayerOutputBody"];
+                    "application/json": components["schemas"]["MessageBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "patch-api-v-1-layers-by-id": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description Layer ID
+                 * @example buildings
+                 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json-patch+json": components["schemas"]["JsonPatchOp"][] | null;
+                "application/merge-patch+json": {
+                    /**
+                     * Format: uri
+                     * @description A URL to the JSON Schema for this object.
+                     * @example http://0.0.0.0:8086/schemas/LayerConfig.json
+                     */
+                    readonly $schema?: string;
+                    /**
+                     * @description Whether layer is visible by default
+                     * @default true
+                     * @example true
+                     */
+                    defaultVisible?: boolean;
+                    /**
+                     * @description Source file name
+                     * @example buildings.pmtiles
+                     */
+                    file?: string;
+                    /**
+                     * @description Fill color (CSS)
+                     * @default #3388ff
+                     * @example #3388ff
+                     */
+                    fill?: string;
+                    /**
+                     * @description Geometry type
+                     * @default polygon
+                     * @example polygon
+                     * @enum {string}
+                     */
+                    geomType?: "polygon" | "line" | "point";
+                    /**
+                     * @description Unique layer identifier
+                     * @example buildings
+                     */
+                    id?: string;
+                    /** @description Legend entries for this layer */
+                    legend?: unknown[];
+                    /**
+                     * @description Display name
+                     * @example Buildings
+                     */
+                    name?: string;
+                    /**
+                     * Format: double
+                     * @description Layer opacity (0-1)
+                     * @default 0.7
+                     * @example 0.7
+                     */
+                    opacity?: number;
+                    /**
+                     * @description Layer name within PMTiles
+                     * @default default
+                     * @example buildings
+                     */
+                    pmtilesLayer?: string;
+                    /** @description Conditional styling rules */
+                    renderRules?: unknown[];
+                    /**
+                     * @description Stroke color (CSS)
+                     * @default #2266cc
+                     * @example #2266cc
+                     */
+                    stroke?: string;
+                };
+                "application/merge-patch+shorthand": {
+                    /**
+                     * Format: uri
+                     * @description A URL to the JSON Schema for this object.
+                     * @example http://0.0.0.0:8086/schemas/LayerConfig.json
+                     */
+                    readonly $schema?: string;
+                    /**
+                     * @description Whether layer is visible by default
+                     * @default true
+                     * @example true
+                     */
+                    defaultVisible?: boolean;
+                    /**
+                     * @description Source file name
+                     * @example buildings.pmtiles
+                     */
+                    file?: string;
+                    /**
+                     * @description Fill color (CSS)
+                     * @default #3388ff
+                     * @example #3388ff
+                     */
+                    fill?: string;
+                    /**
+                     * @description Geometry type
+                     * @default polygon
+                     * @example polygon
+                     * @enum {string}
+                     */
+                    geomType?: "polygon" | "line" | "point";
+                    /**
+                     * @description Unique layer identifier
+                     * @example buildings
+                     */
+                    id?: string;
+                    /** @description Legend entries for this layer */
+                    legend?: unknown[];
+                    /**
+                     * @description Display name
+                     * @example Buildings
+                     */
+                    name?: string;
+                    /**
+                     * Format: double
+                     * @description Layer opacity (0-1)
+                     * @default 0.7
+                     * @example 0.7
+                     */
+                    opacity?: number;
+                    /**
+                     * @description Layer name within PMTiles
+                     * @default default
+                     * @example buildings
+                     */
+                    pmtilesLayer?: string;
+                    /** @description Conditional styling rules */
+                    renderRules?: unknown[];
+                    /**
+                     * @description Stroke color (CSS)
+                     * @default #2266cc
+                     * @example #2266cc
+                     */
+                    stroke?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LayerConfig"];
                 };
             };
             /** @description Error */
@@ -546,7 +1318,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["QueryInputBody"];
+                "application/json": components["schemas"]["Post-api-v1-queryRequest"];
             };
         };
         responses: {
@@ -556,7 +1328,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["QueryOutputBody"];
+                    "application/json": components["schemas"]["QueryBody"];
                 };
             };
             /** @description Error */
@@ -614,7 +1386,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TablesOutputBody"];
+                    "application/json": components["schemas"]["TablesBody"];
                 };
             };
             /** @description Error */

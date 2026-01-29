@@ -20,7 +20,7 @@ binary:
 
 # Taskfile remote include configuration (for consumers)
 taskfile:
-  path: taskfiles/Taskfile.service.yml
+  path: taskfiles/service.yml
   namespace: geo
 
 # Process configuration for the geo server

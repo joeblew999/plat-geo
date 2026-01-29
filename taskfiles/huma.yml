@@ -1,0 +1,65 @@
+# Huma API: codegen, spec, TypeScript, client SDK
+# Usage: task huma:gen, task huma:spec, task huma:ts
+version: '3'
+
+vars:
+  OPENAPI_JSON: openapi.json
+  OPENAPI_YAML: openapi.yaml
+
+tasks:
+  gen:
+    cmds:
+      - task: gen:datastar
+      - task: spec:json
+      - task: ts
+      - task: gen:client
+
+  gen:datastar:
+    desc: Generate Datastar signal helpers + HTML form fragments
+    sources:
+      - internal/service/types.go
+      - cmd/gen/main.go
+    generates:
+      - internal/api/editor/signals_gen.go
+      - web/templates/generated/layer-form-gen.html
+    cmds:
+      - go run ./cmd/gen
+
+  gen:client:
+    desc: Generate Go client SDK via humaclient
+    sources:
+      - internal/api/**/*.go
+      - internal/service/types.go
+    generates:
+      - pkg/geoclient/client.go
+    cmds:
+      - go run ./cmd/geo gen-client
+
+  spec:
+    cmds:
+      - go run ./cmd/geo spec
+
+  spec:json:
+    sources:
+      - 'internal/api/**/*.go'
+      - 'internal/service/types.go'
+      - 'internal/server/server.go'
+      - 'cmd/geo/main.go'
+    generates:
+      - '{{.OPENAPI_JSON}}'
+    cmds:
+      - go run ./cmd/geo spec > {{.OPENAPI_JSON}}
+
+  spec:yaml:
+    cmds:
+      - go run ./cmd/geo spec --yaml > {{.OPENAPI_YAML}}
+
+  ts:
+    deps: [spec:json]
+    cmds:
+      - bun x openapi-typescript {{.OPENAPI_JSON}} -o web/src/generated/api.ts
+
+  clean:
+    cmds:
+      - rm -f {{.OPENAPI_JSON}} {{.OPENAPI_YAML}}
+      - rm -rf web/src/generated/

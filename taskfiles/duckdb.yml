@@ -8,8 +8,7 @@ vars:
   DUCKDB_FILE: '{{.DATA_DIR | default ".data"}}/duckdb/geo.duckdb'
 
 tasks:
-  install:
-    desc: Install DuckDB CLI to .bin
+  duckdb-install:
     cmds:
       - mkdir -p {{.BIN_DIR}}
       - |
@@ -24,40 +23,33 @@ tasks:
           fi
         fi
 
-  install:preview:
-    desc: Install DuckDB preview/nightly build to .bin
+  duckdb-install:preview:
     cmds:
       - mkdir -p {{.BIN_DIR}}
       - curl -fsSL https://install.duckdb.org | DUCKDB_DIR={{.BIN_DIR}} sh -s -- --preview
 
   extensions:
-    desc: Install spatial and parquet extensions
     cmds:
       - '{{.DUCKDB}} -c "INSTALL spatial; INSTALL parquet;"'
 
   extensions:community:
-    desc: Install geography from community extensions
     cmds:
       - '{{.DUCKDB}} -c "INSTALL geography FROM community; INSTALL spatial; INSTALL parquet;"'
 
-  shell:
-    desc: Open DuckDB shell
+  duckdb-shell:
     cmds:
       - mkdir -p {{.DUCKDB_DIR}}
       - '{{.DUCKDB}} {{.DUCKDB_FILE}}'
 
-  shell:memory:
-    desc: Open DuckDB in-memory shell
+  duckdb-shell:memory:
     cmds:
       - '{{.DUCKDB}}'
 
-  query:
-    desc: Run a query (use -- -c "SELECT ...")
+  duckdb-query:
     cmds:
       - '{{.DUCKDB}} {{.DUCKDB_FILE}} {{.CLI_ARGS}}'
 
   load:parquet:
-    desc: Load a parquet file into table (FILE=path TABLE=name)
     vars:
       FILE: '{{.FILE}}'
       TABLE: '{{.TABLE | default "data"}}'
@@ -65,7 +57,6 @@ tasks:
       - '{{.DUCKDB}} {{.DUCKDB_FILE}} -c "CREATE OR REPLACE TABLE {{.TABLE}} AS SELECT * FROM ''{{.FILE}}'';"'
 
   load:geoparquet:
-    desc: Load a GeoParquet file with geography extension
     vars:
       FILE: '{{.FILE}}'
       TABLE: '{{.TABLE | default "geodata"}}'
@@ -76,37 +67,100 @@ tasks:
           CREATE OR REPLACE TABLE {{.TABLE}} AS SELECT * FROM '{{.FILE}}';
         "
 
-  info:
-    desc: Show database info
+  duckdb-info:
     cmds:
       - '{{.DUCKDB}} {{.DUCKDB_FILE}} -c "PRAGMA database_list; SHOW TABLES;"'
 
-  version:
-    desc: Show DuckDB version
+  duckdb-version:
     cmds:
       - '{{.DUCKDB}} --version'
 
   # DuckDB UI (web interface)
-  ui:install:
-    desc: Install DuckDB UI extension
+  ui:setup:
     cmds:
       - '{{.DUCKDB}} -c "INSTALL ui; LOAD ui;"'
 
   ui:run:
-    desc: Start DuckDB UI server (for process-compose)
     vars:
       DUCKDB_UI_PORT: '{{.DUCKDB_UI_PORT | default "4213"}}'
     cmds:
       - '{{.DUCKDB}} {{.DUCKDB_FILE}} -c "LOAD ui; CALL start_ui_server(host := ''0.0.0.0'', port := {{.DUCKDB_UI_PORT}}, open_browser := false); SELECT ''UI running on http://localhost:{{.DUCKDB_UI_PORT}}''; CALL ui_wait();"'
 
   ui:health:
-    desc: Health check for DuckDB UI (for process-compose)
     vars:
       DUCKDB_UI_PORT: '{{.DUCKDB_UI_PORT | default "4213"}}'
     cmds:
       - curl -sf http://localhost:{{.DUCKDB_UI_PORT}}/ > /dev/null
 
   ui:open:
-    desc: Open DuckDB UI in browser
     cmds:
       - '{{.DUCKDB}} {{.DUCKDB_FILE}} -ui'
+
+  # DuckLake (lakehouse catalog)
+  lake:setup:
+    cmds:
+      - '{{.DUCKDB}} -c "INSTALL ducklake;"'
+
+  lake:init:
+    vars:
+      DUCKLAKE_CATALOG: '{{.DUCKLAKE_CATALOG | default "geo_catalog"}}'
+      CATALOG_PATH: '{{.DATA_DIR}}/{{.DUCKLAKE_CATALOG}}.duckdb'
+    cmds:
+      - |
+        {{.DUCKDB}} -c "
+          LOAD ducklake;
+          ATTACH 'ducklake:{{.CATALOG_PATH}}' AS {{.DUCKLAKE_CATALOG}};
+        "
+      - echo "DuckLake catalog initialized at {{.CATALOG_PATH}}"
+
+  lake:shell:
+    vars:
+      DUCKLAKE_CATALOG: '{{.DUCKLAKE_CATALOG | default "geo_catalog"}}'
+      CATALOG_PATH: '{{.DATA_DIR}}/{{.DUCKLAKE_CATALOG}}.duckdb'
+    cmds:
+      - |
+        {{.DUCKDB}} -init <(echo "
+          LOAD ducklake;
+          ATTACH 'ducklake:{{.CATALOG_PATH}}' AS {{.DUCKLAKE_CATALOG}};
+          USE {{.DUCKLAKE_CATALOG}};
+        ")
+
+  lake:tables:
+    vars:
+      DUCKLAKE_CATALOG: '{{.DUCKLAKE_CATALOG | default "geo_catalog"}}'
+      CATALOG_PATH: '{{.DATA_DIR}}/{{.DUCKLAKE_CATALOG}}.duckdb'
+    cmds:
+      - |
+        {{.DUCKDB}} -c "
+          LOAD ducklake;
+          ATTACH 'ducklake:{{.CATALOG_PATH}}' AS {{.DUCKLAKE_CATALOG}};
+          SHOW ALL TABLES;
+        "
+
+  lake:ingest:parquet:
+    vars:
+      DUCKLAKE_CATALOG: '{{.DUCKLAKE_CATALOG | default "geo_catalog"}}'
+      CATALOG_PATH: '{{.DATA_DIR}}/{{.DUCKLAKE_CATALOG}}.duckdb'
+      FILE: '{{.FILE}}'
+      TABLE: '{{.TABLE | default "data"}}'
+      SCHEMA: '{{.SCHEMA | default "main"}}'
+    cmds:
+      - |
+        {{.DUCKDB}} -c "
+          LOAD ducklake;
+          ATTACH 'ducklake:{{.CATALOG_PATH}}' AS {{.DUCKLAKE_CATALOG}};
+          CREATE OR REPLACE TABLE {{.DUCKLAKE_CATALOG}}.{{.SCHEMA}}.{{.TABLE}} AS
+            SELECT * FROM '{{.FILE}}';
+        "
+
+  lake:snapshots:
+    vars:
+      DUCKLAKE_CATALOG: '{{.DUCKLAKE_CATALOG | default "geo_catalog"}}'
+      CATALOG_PATH: '{{.DATA_DIR}}/{{.DUCKLAKE_CATALOG}}.duckdb'
+    cmds:
+      - |
+        {{.DUCKDB}} -c "
+          LOAD ducklake;
+          ATTACH 'ducklake:{{.CATALOG_PATH}}' AS {{.DUCKLAKE_CATALOG}};
+          SELECT * FROM ducklake_snapshots('{{.DUCKLAKE_CATALOG}}');
+        "

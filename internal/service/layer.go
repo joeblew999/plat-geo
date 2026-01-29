@@ -70,6 +70,24 @@ func (s *LayerService) Create(layer LayerConfig) (LayerConfig, error) {
 	return layer, nil
 }
 
+// Update replaces a layer configuration by ID.
+func (s *LayerService) Update(id string, layer LayerConfig) (LayerConfig, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if _, exists := s.layers[id]; !exists {
+		return LayerConfig{}, fmt.Errorf("layer %q not found", id)
+	}
+
+	layer.ID = id
+	s.layers[id] = layer
+	if err := s.saveToDisk(); err != nil {
+		return LayerConfig{}, err
+	}
+
+	return layer, nil
+}
+
 // Delete removes a layer by ID.
 func (s *LayerService) Delete(id string) error {
 	s.mu.Lock()

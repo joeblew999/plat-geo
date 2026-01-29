@@ -1,9 +1,18 @@
 {
   "components": {
     "schemas": {
-      "CreateLayerOutputBody": {
+      "CreatedLayerBody": {
         "additionalProperties": false,
         "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "http://0.0.0.0:8086/schemas/CreatedLayerBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
           "id": {
             "description": "Generated layer ID",
             "type": "string"
@@ -13,32 +22,13 @@
             "description": "Created layer configuration"
           },
           "message": {
-            "description": "Success message",
-            "examples": [
-              "Layer created successfully"
-            ],
+            "description": "Result message",
             "type": "string"
           }
         },
         "required": [
           "id",
           "layer",
-          "message"
-        ],
-        "type": "object"
-      },
-      "DeleteLayerOutputBody": {
-        "additionalProperties": false,
-        "properties": {
-          "message": {
-            "description": "Success message",
-            "examples": [
-              "Layer deleted successfully"
-            ],
-            "type": "string"
-          }
-        },
-        "required": [
           "message"
         ],
         "type": "object"
@@ -63,6 +53,15 @@
       "ErrorModel": {
         "additionalProperties": false,
         "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "http://0.0.0.0:8086/schemas/ErrorModel.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
           "detail": {
             "description": "A human-readable explanation specific to this occurrence of the problem.",
             "examples": [
@@ -118,6 +117,15 @@
       "HealthBody": {
         "additionalProperties": false,
         "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "http://0.0.0.0:8086/schemas/HealthBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
           "status": {
             "description": "Health status",
             "examples": [
@@ -139,9 +147,18 @@
         ],
         "type": "object"
       },
-      "InfoOutputBody": {
+      "InfoBody": {
         "additionalProperties": false,
         "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "http://0.0.0.0:8086/schemas/InfoBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
           "data_dir": {
             "description": "Data directory path",
             "type": "string"
@@ -178,9 +195,51 @@
         ],
         "type": "object"
       },
+      "JsonPatchOp": {
+        "additionalProperties": false,
+        "properties": {
+          "from": {
+            "description": "JSON Pointer for the source of a move or copy",
+            "type": "string"
+          },
+          "op": {
+            "description": "Operation name",
+            "enum": [
+              "add",
+              "remove",
+              "replace",
+              "move",
+              "copy",
+              "test"
+            ],
+            "type": "string"
+          },
+          "path": {
+            "description": "JSON Pointer to the field being operated on, or the destination of a move/copy operation",
+            "type": "string"
+          },
+          "value": {
+            "description": "The value to set"
+          }
+        },
+        "required": [
+          "op",
+          "path"
+        ],
+        "type": "object"
+      },
       "LayerConfig": {
         "additionalProperties": false,
         "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "http://0.0.0.0:8086/schemas/LayerConfig.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
           "defaultVisible": {
             "default": true,
             "description": "Whether layer is visible by default",
@@ -197,6 +256,7 @@
             "type": "string"
           },
           "fill": {
+            "default": "#3388ff",
             "description": "Fill color (CSS)",
             "examples": [
               "#3388ff"
@@ -204,6 +264,7 @@
             "type": "string"
           },
           "geomType": {
+            "default": "polygon",
             "description": "Geometry type",
             "enum": [
               "polygon",
@@ -253,6 +314,7 @@
             "type": "number"
           },
           "pmtilesLayer": {
+            "default": "default",
             "description": "Layer name within PMTiles",
             "examples": [
               "buildings"
@@ -270,6 +332,7 @@
             ]
           },
           "stroke": {
+            "default": "#2266cc",
             "description": "Stroke color (CSS)",
             "examples": [
               "#2266cc"
@@ -303,9 +366,40 @@
         ],
         "type": "object"
       },
-      "QueryInputBody": {
+      "MessageBody": {
         "additionalProperties": false,
         "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "http://0.0.0.0:8086/schemas/MessageBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "message": {
+            "description": "Result message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "type": "object"
+      },
+      "Post-api-v1-queryRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "http://0.0.0.0:8086/schemas/Post-api-v1-queryRequest.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
           "query": {
             "description": "SQL query to execute",
             "type": "string"
@@ -316,9 +410,18 @@
         ],
         "type": "object"
       },
-      "QueryOutputBody": {
+      "QueryBody": {
         "additionalProperties": false,
         "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "http://0.0.0.0:8086/schemas/QueryBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
           "columns": {
             "description": "Column names",
             "items": {
@@ -425,9 +528,18 @@
         ],
         "type": "object"
       },
-      "TablesOutputBody": {
+      "TablesBody": {
         "additionalProperties": false,
         "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "http://0.0.0.0:8086/schemas/TablesBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
           "tables": {
             "description": "List of table names",
             "items": {
@@ -477,6 +589,338 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/editor/layers": {
+      "get": {
+        "operationId": "get-api-v1-editor-layers",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Get API v1 editor layers",
+        "tags": [
+          "editor"
+        ]
+      },
+      "post": {
+        "operationId": "post-api-v1-editor-layers",
+        "requestBody": {
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "contentMediaType": "application/octet-stream",
+                "format": "binary",
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Post API v1 editor layers",
+        "tags": [
+          "editor"
+        ]
+      }
+    },
+    "/api/v1/editor/layers/{id}": {
+      "delete": {
+        "operationId": "delete-api-v1-editor-layers-by-id",
+        "parameters": [
+          {
+            "description": "Layer ID to delete",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Layer ID to delete",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Delete API v1 editor layers by ID",
+        "tags": [
+          "editor"
+        ]
+      }
+    },
+    "/api/v1/editor/sources": {
+      "get": {
+        "operationId": "get-api-v1-editor-sources",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Get API v1 editor sources",
+        "tags": [
+          "editor"
+        ]
+      }
+    },
+    "/api/v1/editor/sources/list": {
+      "get": {
+        "operationId": "get-api-v1-editor-sources-list",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Get API v1 editor sources list",
+        "tags": [
+          "editor"
+        ]
+      }
+    },
+    "/api/v1/editor/sources/select": {
+      "get": {
+        "operationId": "get-api-v1-editor-sources-select",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Get API v1 editor sources select",
+        "tags": [
+          "editor"
+        ]
+      }
+    },
+    "/api/v1/editor/sources/upload": {
+      "post": {
+        "operationId": "post-api-v1-editor-sources-upload",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "properties": {
+                  "filename": {
+                    "contentMediaType": "application/octet-stream",
+                    "description": "filename of the file being uploaded",
+                    "format": "binary",
+                    "type": "string"
+                  },
+                  "name": {
+                    "description": "general purpose name for multipart form value",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Post API v1 editor sources upload",
+        "tags": [
+          "editor"
+        ]
+      }
+    },
+    "/api/v1/editor/sources/{filename}": {
+      "delete": {
+        "operationId": "delete-api-v1-editor-sources-by-filename",
+        "parameters": [
+          {
+            "description": "Source filename to delete",
+            "in": "path",
+            "name": "filename",
+            "required": true,
+            "schema": {
+              "description": "Source filename to delete",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Delete API v1 editor sources by filename",
+        "tags": [
+          "editor"
+        ]
+      }
+    },
+    "/api/v1/editor/tiles": {
+      "get": {
+        "operationId": "get-api-v1-editor-tiles",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Get API v1 editor tiles",
+        "tags": [
+          "editor"
+        ]
+      }
+    },
+    "/api/v1/editor/tiles/generate": {
+      "post": {
+        "operationId": "post-api-v1-editor-tiles-generate",
+        "requestBody": {
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "contentMediaType": "application/octet-stream",
+                "format": "binary",
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Post API v1 editor tiles generate",
+        "tags": [
+          "editor"
+        ]
+      }
+    },
+    "/api/v1/editor/tiles/select": {
+      "get": {
+        "operationId": "get-api-v1-editor-tiles-select",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Get API v1 editor tiles select",
+        "tags": [
+          "editor"
+        ]
+      }
+    },
     "/api/v1/info": {
       "get": {
         "operationId": "get-api-v1-info",
@@ -485,7 +929,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InfoOutputBody"
+                  "$ref": "#/components/schemas/InfoBody"
                 }
               }
             },
@@ -502,7 +946,10 @@
             "description": "Error"
           }
         },
-        "summary": "Get API v1 info"
+        "summary": "Get API v1 info",
+        "tags": [
+          "health"
+        ]
       }
     },
     "/api/v1/layers": {
@@ -533,7 +980,10 @@
             "description": "Error"
           }
         },
-        "summary": "Get API v1 layers"
+        "summary": "Get API v1 layers",
+        "tags": [
+          "layers"
+        ]
       },
       "post": {
         "operationId": "post-api-v1-layers",
@@ -552,7 +1002,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CreateLayerOutputBody"
+                  "$ref": "#/components/schemas/CreatedLayerBody"
                 }
               }
             },
@@ -569,7 +1019,10 @@
             "description": "Error"
           }
         },
-        "summary": "Post API v1 layers"
+        "summary": "Post API v1 layers",
+        "tags": [
+          "layers"
+        ]
       }
     },
     "/api/v1/layers/{id}": {
@@ -577,13 +1030,13 @@
         "operationId": "delete-api-v1-layers-by-id",
         "parameters": [
           {
-            "description": "Layer ID to delete",
+            "description": "Layer ID",
             "example": "buildings",
             "in": "path",
             "name": "id",
             "required": true,
             "schema": {
-              "description": "Layer ID to delete",
+              "description": "Layer ID",
               "examples": [
                 "buildings"
               ],
@@ -596,7 +1049,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DeleteLayerOutputBody"
+                  "$ref": "#/components/schemas/MessageBody"
                 }
               }
             },
@@ -613,7 +1066,10 @@
             "description": "Error"
           }
         },
-        "summary": "Delete API v1 layers by ID"
+        "summary": "Delete API v1 layers by ID",
+        "tags": [
+          "layers"
+        ]
       },
       "get": {
         "operationId": "get-api-v1-layers-by-id",
@@ -655,17 +1111,253 @@
             "description": "Error"
           }
         },
-        "summary": "Get API v1 layers by ID"
-      }
-    },
-    "/api/v1/query": {
-      "post": {
-        "operationId": "post-api-v1-query",
+        "summary": "Get API v1 layers by ID",
+        "tags": [
+          "layers"
+        ]
+      },
+      "patch": {
+        "description": "Partial update operation supporting both JSON Merge Patch \u0026 JSON Patch updates.",
+        "operationId": "patch-api-v-1-layers-by-id",
+        "parameters": [
+          {
+            "description": "Layer ID",
+            "example": "buildings",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Layer ID",
+              "examples": [
+                "buildings"
+              ],
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
-            "application/json": {
+            "application/json-patch+json": {
               "schema": {
-                "$ref": "#/components/schemas/QueryInputBody"
+                "items": {
+                  "$ref": "#/components/schemas/JsonPatchOp"
+                },
+                "type": [
+                  "array",
+                  "null"
+                ]
+              }
+            },
+            "application/merge-patch+json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "$schema": {
+                    "description": "A URL to the JSON Schema for this object.",
+                    "examples": [
+                      "http://0.0.0.0:8086/schemas/LayerConfig.json"
+                    ],
+                    "format": "uri",
+                    "readOnly": true,
+                    "type": "string"
+                  },
+                  "defaultVisible": {
+                    "default": true,
+                    "description": "Whether layer is visible by default",
+                    "examples": [
+                      true
+                    ],
+                    "type": "boolean"
+                  },
+                  "file": {
+                    "description": "Source file name",
+                    "examples": [
+                      "buildings.pmtiles"
+                    ],
+                    "type": "string"
+                  },
+                  "fill": {
+                    "default": "#3388ff",
+                    "description": "Fill color (CSS)",
+                    "examples": [
+                      "#3388ff"
+                    ],
+                    "type": "string"
+                  },
+                  "geomType": {
+                    "default": "polygon",
+                    "description": "Geometry type",
+                    "enum": [
+                      "polygon",
+                      "line",
+                      "point"
+                    ],
+                    "examples": [
+                      "polygon"
+                    ],
+                    "type": "string"
+                  },
+                  "id": {
+                    "description": "Unique layer identifier",
+                    "examples": [
+                      "buildings"
+                    ],
+                    "type": "string"
+                  },
+                  "legend": {
+                    "description": "Legend entries for this layer",
+                    "items": {},
+                    "type": "array"
+                  },
+                  "name": {
+                    "description": "Display name",
+                    "examples": [
+                      "Buildings"
+                    ],
+                    "maxLength": 100,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "opacity": {
+                    "default": 0.7,
+                    "description": "Layer opacity (0-1)",
+                    "examples": [
+                      0.7
+                    ],
+                    "format": "double",
+                    "maximum": 1,
+                    "minimum": 0,
+                    "type": "number"
+                  },
+                  "pmtilesLayer": {
+                    "default": "default",
+                    "description": "Layer name within PMTiles",
+                    "examples": [
+                      "buildings"
+                    ],
+                    "type": "string"
+                  },
+                  "renderRules": {
+                    "description": "Conditional styling rules",
+                    "items": {},
+                    "type": "array"
+                  },
+                  "stroke": {
+                    "default": "#2266cc",
+                    "description": "Stroke color (CSS)",
+                    "examples": [
+                      "#2266cc"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "application/merge-patch+shorthand": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "$schema": {
+                    "description": "A URL to the JSON Schema for this object.",
+                    "examples": [
+                      "http://0.0.0.0:8086/schemas/LayerConfig.json"
+                    ],
+                    "format": "uri",
+                    "readOnly": true,
+                    "type": "string"
+                  },
+                  "defaultVisible": {
+                    "default": true,
+                    "description": "Whether layer is visible by default",
+                    "examples": [
+                      true
+                    ],
+                    "type": "boolean"
+                  },
+                  "file": {
+                    "description": "Source file name",
+                    "examples": [
+                      "buildings.pmtiles"
+                    ],
+                    "type": "string"
+                  },
+                  "fill": {
+                    "default": "#3388ff",
+                    "description": "Fill color (CSS)",
+                    "examples": [
+                      "#3388ff"
+                    ],
+                    "type": "string"
+                  },
+                  "geomType": {
+                    "default": "polygon",
+                    "description": "Geometry type",
+                    "enum": [
+                      "polygon",
+                      "line",
+                      "point"
+                    ],
+                    "examples": [
+                      "polygon"
+                    ],
+                    "type": "string"
+                  },
+                  "id": {
+                    "description": "Unique layer identifier",
+                    "examples": [
+                      "buildings"
+                    ],
+                    "type": "string"
+                  },
+                  "legend": {
+                    "description": "Legend entries for this layer",
+                    "items": {},
+                    "type": "array"
+                  },
+                  "name": {
+                    "description": "Display name",
+                    "examples": [
+                      "Buildings"
+                    ],
+                    "maxLength": 100,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "opacity": {
+                    "default": 0.7,
+                    "description": "Layer opacity (0-1)",
+                    "examples": [
+                      0.7
+                    ],
+                    "format": "double",
+                    "maximum": 1,
+                    "minimum": 0,
+                    "type": "number"
+                  },
+                  "pmtilesLayer": {
+                    "default": "default",
+                    "description": "Layer name within PMTiles",
+                    "examples": [
+                      "buildings"
+                    ],
+                    "type": "string"
+                  },
+                  "renderRules": {
+                    "description": "Conditional styling rules",
+                    "items": {},
+                    "type": "array"
+                  },
+                  "stroke": {
+                    "default": "#2266cc",
+                    "description": "Stroke color (CSS)",
+                    "examples": [
+                      "#2266cc"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "type": "object"
               }
             }
           },
@@ -676,7 +1368,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/QueryOutputBody"
+                  "$ref": "#/components/schemas/LayerConfig"
                 }
               }
             },
@@ -693,7 +1385,106 @@
             "description": "Error"
           }
         },
-        "summary": "Post API v1 query"
+        "summary": "Patch api-v-1-layers-by-id",
+        "tags": [
+          "layers"
+        ]
+      },
+      "put": {
+        "operationId": "put-api-v1-layers-by-id",
+        "parameters": [
+          {
+            "description": "Layer ID",
+            "example": "buildings",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Layer ID",
+              "examples": [
+                "buildings"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LayerConfig"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LayerConfig"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Put API v1 layers by ID",
+        "tags": [
+          "layers"
+        ]
+      }
+    },
+    "/api/v1/query": {
+      "post": {
+        "operationId": "post-api-v1-query",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Post-api-v1-queryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryBody"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Post API v1 query",
+        "tags": [
+          "database"
+        ]
       }
     },
     "/api/v1/sources": {
@@ -727,7 +1518,10 @@
             "description": "Error"
           }
         },
-        "summary": "List API v1 sources"
+        "summary": "List API v1 sources",
+        "tags": [
+          "sources"
+        ]
       }
     },
     "/api/v1/tables": {
@@ -738,7 +1532,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/TablesOutputBody"
+                  "$ref": "#/components/schemas/TablesBody"
                 }
               }
             },
@@ -755,7 +1549,10 @@
             "description": "Error"
           }
         },
-        "summary": "Get API v1 tables"
+        "summary": "Get API v1 tables",
+        "tags": [
+          "database"
+        ]
       }
     },
     "/api/v1/tiles": {
@@ -789,7 +1586,10 @@
             "description": "Error"
           }
         },
-        "summary": "List API v1 tiles"
+        "summary": "List API v1 tiles",
+        "tags": [
+          "tiles"
+        ]
       }
     },
     "/health": {
@@ -817,32 +1617,49 @@
             "description": "Error"
           }
         },
-        "summary": "Get health"
+        "summary": "Get health",
+        "tags": [
+          "health"
+        ]
       }
     }
   },
   "servers": [
     {
       "description": "Local server",
-      "url": "http://localhost:8086"
+      "url": "http://0.0.0.0:8086"
     }
   ],
   "tags": [
     {
-      "description": "Layer management operations",
-      "name": "layers"
+      "description": "Health check endpoints",
+      "name": "health"
     },
     {
-      "description": "Tile serving and management",
-      "name": "tiles"
+      "description": "Layer management operations",
+      "name": "layers"
     },
     {
       "description": "Source file management",
       "name": "sources"
     },
     {
-      "description": "Health check endpoints",
-      "name": "health"
+      "description": "Tile serving and management",
+      "name": "tiles"
+    },
+    {
+      "description": "Database query endpoints",
+      "name": "database"
+    },
+    {
+      "description": "Editor SSE endpoints (Datastar)",
+      "name": "editor"
     }
-  ]
+  ],
+  "x-cli-config": {
+    "security": "",
+    "params": {
+      "host": "http://0.0.0.0:8086"
+    }
+  }
 }

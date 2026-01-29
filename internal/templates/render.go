@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"path/filepath"
 	"sync"
+	texttemplate "text/template"
 )
 
 // funcMap provides common template functions.
@@ -35,9 +36,9 @@ type Renderer struct {
 
 // New creates a new template renderer.
 // fragmentsDir should be the path to web/templates/fragments/
+// It also loads generated templates from the sibling generated/ directory.
 func New(fragmentsDir string) (*Renderer, error) {
-	pattern := filepath.Join(fragmentsDir, "*.html")
-	tmpl, err := template.New("").Funcs(funcMap).ParseGlob(pattern)
+	tmpl, err := parseTemplates(fragmentsDir)
 	if err != nil {
 		return nil, err
 	}
@@ -74,10 +75,43 @@ func (r *Renderer) MustRender(name string, data any) string {
 	return s
 }
 
+// RenderPage parses a page-level template file and renders it using
+// the already-loaded fragments (so {{template "layer-form" .}} works).
+// Uses text/template to avoid HTML-escaping of data-signals JSON attributes.
+func (r *Renderer) RenderPage(pagePath string, data any) (string, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	// Build a text/template that includes all fragment definitions
+	tmpl := texttemplate.New("").Funcs(texttemplate.FuncMap(funcMap))
+
+	// Re-parse fragment sources into a text/template so {{template "layer-form"}} works
+	for _, t := range r.templates.Templates() {
+		if t.Name() == "" {
+			continue
+		}
+		// Clone each defined fragment by re-parsing its tree
+		if _, err := tmpl.AddParseTree(t.Name(), t.Tree); err != nil {
+			return "", err
+		}
+	}
+
+	// Parse the page template
+	if _, err := tmpl.ParseFiles(pagePath); err != nil {
+		return "", err
+	}
+
+	var buf bytes.Buffer
+	name := filepath.Base(pagePath)
+	if err := tmpl.ExecuteTemplate(&buf, name, data); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}
+
 // Reload reloads templates from disk (useful for dev hot-reload).
 func (r *Renderer) Reload(fragmentsDir string) error {
-	pattern := filepath.Join(fragmentsDir, "*.html")
-	tmpl, err := template.New("").Funcs(funcMap).ParseGlob(pattern)
+	tmpl, err := parseTemplates(fragmentsDir)
 	if err != nil {
 		return err
 	}
@@ -87,4 +121,24 @@ func (r *Renderer) Reload(fragmentsDir string) error {
 	r.mu.Unlock()
 
 	return nil
+}
+
+// parseTemplates loads hand-written fragments and generated templates.
+func parseTemplates(fragmentsDir string) (*template.Template, error) {
+	tmpl := template.New("").Funcs(funcMap)
+
+	// Hand-written fragments
+	pattern := filepath.Join(fragmentsDir, "*.html")
+	tmpl, err := tmpl.ParseGlob(pattern)
+	if err != nil {
+		return nil, err
+	}
+
+	// Generated templates (sibling directory)
+	genDir := filepath.Join(filepath.Dir(fragmentsDir), "generated")
+	genPattern := filepath.Join(genDir, "*.html")
+	// Ignore error — generated dir may not exist yet
+	tmpl, _ = tmpl.ParseGlob(genPattern)
+
+	return tmpl, nil
 }

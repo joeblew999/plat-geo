@@ -9,8 +9,7 @@ vars:
   BASEMAP_URL: 'https://build.protomaps.com'
 
 tasks:
-  install:
-    desc: Install pmtiles CLI to .bin
+  pmtiles-install:
     status:
       - test -f {{.PMTILES}}
     cmds:
@@ -28,15 +27,13 @@ tasks:
         rm /tmp/pmtiles.tar.gz
       - '{{.PMTILES}} --version'
 
-  version:
-    desc: Show pmtiles version
-    deps: [install]
+  pmtiles-version:
+    deps: [pmtiles-install]
     cmds:
       - '{{.PMTILES}} --version'
 
   extract:
-    desc: Extract region from Protomaps daily build (BBOX="-122.6,37.2,-121.7,38.0" NAME="bayarea")
-    deps: [install]
+    deps: [pmtiles-install]
     vars:
       BBOX: '{{.BBOX}}'
       NAME: '{{.NAME | default "region"}}'
@@ -50,37 +47,32 @@ tasks:
           --maxzoom={{.MAXZOOM}}
 
   serve:
-    desc: Serve PMTiles locally
-    deps: [install]
+    deps: [pmtiles-install]
     vars:
       PORT: '{{.PMTILES_PORT | default "8081"}}'
     cmds:
       - '{{.PMTILES}} serve {{.PMTILES_DIR}} --port {{.PORT}}'
 
   serve:health:
-    desc: Health check for PMTiles server
     vars:
       PORT: '{{.PMTILES_PORT | default "8081"}}'
     cmds:
       - curl -sf http://localhost:{{.PORT}}/ > /dev/null
 
   show:
-    desc: Show PMTiles file info (FILE=basemap.pmtiles)
-    deps: [install]
+    deps: [pmtiles-install]
     vars:
       FILE: '{{.FILE | default "basemap.pmtiles"}}'
     cmds:
       - '{{.PMTILES}} show {{.PMTILES_DIR}}/{{.FILE}}'
 
   verify:
-    desc: Verify PMTiles file integrity (FILE=basemap.pmtiles)
-    deps: [install]
+    deps: [pmtiles-install]
     vars:
       FILE: '{{.FILE | default "basemap.pmtiles"}}'
     cmds:
       - '{{.PMTILES}} verify {{.PMTILES_DIR}}/{{.FILE}}'
 
   list:
-    desc: List PMTiles files
     cmds:
       - ls -lh {{.PMTILES_DIR}}/*.pmtiles 2>/dev/null || echo "No PMTiles files found"

@@ -7,8 +7,7 @@ vars:
   TIPPECANOE_IMAGE: 'jskeates/tippecanoe'
 
 tasks:
-  install:
-    desc: Install Tippecanoe
+  tippecanoe-install:
     status:
       - command -v tippecanoe &> /dev/null
     cmds:
@@ -24,22 +23,19 @@ tasks:
           docker pull {{.TIPPECANOE_IMAGE}}
         fi
 
-  install:docker:
-    desc: Pull Tippecanoe Docker image
+  tippecanoe-install:docker:
     status:
       - docker image inspect {{.TIPPECANOE_IMAGE}} &> /dev/null
     cmds:
       - docker pull {{.TIPPECANOE_IMAGE}}
 
-  version:
-    desc: Show Tippecanoe version
-    deps: [install]
+  tippecanoe-version:
+    deps: [tippecanoe-install]
     cmds:
       - tippecanoe --version 2>&1 | head -1
 
   generate:
-    desc: Generate tiles from GeoJSON (FILE=input.geojson NAME=output)
-    deps: [install]
+    deps: [tippecanoe-install]
     vars:
       FILE: '{{.FILE}}'
       NAME: '{{.NAME | default "tiles"}}'
@@ -57,8 +53,7 @@ tasks:
           {{.FILE}}
 
   generate:auto:
-    desc: Generate tiles with automatic zoom detection (FILE=input.geojson NAME=output)
-    deps: [install]
+    deps: [tippecanoe-install]
     vars:
       FILE: '{{.FILE}}'
       NAME: '{{.NAME | default "tiles"}}'
@@ -67,8 +62,7 @@ tasks:
       - tippecanoe -o {{.PMTILES_DIR}}/{{.NAME}}.pmtiles -zg --force {{.FILE}}
 
   cluster:
-    desc: Generate clustered point tiles (FILE=input.geojson NAME=clustered DISTANCE=50)
-    deps: [install]
+    deps: [tippecanoe-install]
     vars:
       FILE: '{{.FILE}}'
       NAME: '{{.NAME | default "clustered"}}'
@@ -85,8 +79,7 @@ tasks:
           {{.FILE}}
 
   join:
-    desc: Join CSV attributes to existing tileset (TILES=file.pmtiles CSV=data.csv OUTPUT=joined.pmtiles)
-    deps: [install]
+    deps: [tippecanoe-install]
     vars:
       TILES: '{{.TILES}}'
       CSV: '{{.CSV}}'
@@ -95,8 +88,7 @@ tasks:
       - tile-join -o {{.OUTPUT}} -c {{.CSV}} {{.TILES}}
 
   decode:
-    desc: Decode tiles back to GeoJSON (TILES=file.pmtiles Z=10 X=0 Y=0)
-    deps: [install]
+    deps: [tippecanoe-install]
     vars:
       TILES: '{{.TILES}}'
       Z: '{{.Z | default "10"}}'
@@ -106,8 +98,7 @@ tasks:
       - tippecanoe-decode {{.TILES}} {{.Z}} {{.X}} {{.Y}}
 
   from-duckdb:
-    desc: Export DuckDB table to tiles (TABLE=places)
-    deps: [install]
+    deps: [tippecanoe-install]
     vars:
       TABLE: '{{.TABLE}}'
       NAME: '{{.NAME | default .TABLE}}'
@@ -131,8 +122,7 @@ tasks:
       - rm /tmp/{{.TABLE}}.geojsonl
 
   docker:generate:
-    desc: Generate tiles using Docker (FILE=input.geojson NAME=output)
-    deps: [install:docker]
+    deps: [tippecanoe-install:docker]
     vars:
       FILE: '{{.FILE}}'
       NAME: '{{.NAME | default "tiles"}}'

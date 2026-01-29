@@ -1,0 +1,11 @@
+{
+  "id": "smoke-test",
+  "name": "Smoke Test Layer",
+  "file": "firenze.pmtiles",
+  "pmtilesLayer": "buildings",
+  "geomType": "polygon",
+  "fill": "#00ff00",
+  "stroke": "#009900",
+  "opacity": 0.5,
+  "defaultVisible": true
+}
