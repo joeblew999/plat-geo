@@ -28,9 +28,6 @@ includes:
   service:
     taskfile: taskfiles/service.yml
     optional: true
-  src:
-    taskfile: taskfiles/src.yml
-    optional: true
 
 tasks:
   default:

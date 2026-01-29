@@ -1,40 +1,28 @@
 version: "3"
 
 vars:
-  BIN_DIR: '{{.BIN_DIR | default ".bin"}}'
   DATA_DIR: '{{.DATA_DIR | default ".data"}}'
   PMTILES_DIR: '{{.DATA_DIR}}/pmtiles'
   TIPPECANOE_IMAGE: 'jskeates/tippecanoe'
 
 tasks:
   tippecanoe-install:
+    desc: Install tippecanoe (brew/apt/docker)
     status:
       - command -v tippecanoe &> /dev/null
     cmds:
       - |
         if command -v brew &> /dev/null; then
-          echo "Installing Tippecanoe via Homebrew..."
           brew install tippecanoe
         elif command -v apt &> /dev/null; then
-          echo "Installing Tippecanoe via apt..."
           sudo apt install -y tippecanoe
         else
           echo "No package manager found. Using Docker image: {{.TIPPECANOE_IMAGE}}"
           docker pull {{.TIPPECANOE_IMAGE}}
         fi
 
-  tippecanoe-install:docker:
-    status:
-      - docker image inspect {{.TIPPECANOE_IMAGE}} &> /dev/null
-    cmds:
-      - docker pull {{.TIPPECANOE_IMAGE}}
-
-  tippecanoe-version:
-    deps: [tippecanoe-install]
-    cmds:
-      - tippecanoe --version 2>&1 | head -1
-
   generate:
+    desc: Generate PMTiles from GeoJSON
     deps: [tippecanoe-install]
     vars:
       FILE: '{{.FILE}}'
@@ -52,82 +40,14 @@ tasks:
           --force \
           {{.FILE}}
 
-  generate:auto:
-    deps: [tippecanoe-install]
-    vars:
-      FILE: '{{.FILE}}'
-      NAME: '{{.NAME | default "tiles"}}'
-    cmds:
-      - mkdir -p {{.PMTILES_DIR}}
-      - tippecanoe -o {{.PMTILES_DIR}}/{{.NAME}}.pmtiles -zg --force {{.FILE}}
-
-  cluster:
-    deps: [tippecanoe-install]
-    vars:
-      FILE: '{{.FILE}}'
-      NAME: '{{.NAME | default "clustered"}}'
-      DISTANCE: '{{.DISTANCE | default "50"}}'
-    cmds:
-      - mkdir -p {{.PMTILES_DIR}}
-      - |
-        tippecanoe \
-          -o {{.PMTILES_DIR}}/{{.NAME}}.pmtiles \
-          -zg \
-          --cluster-distance={{.DISTANCE}} \
-          --cluster-densest-as-needed \
-          --force \
-          {{.FILE}}
-
-  join:
-    deps: [tippecanoe-install]
-    vars:
-      TILES: '{{.TILES}}'
-      CSV: '{{.CSV}}'
-      OUTPUT: '{{.OUTPUT}}'
-    cmds:
-      - tile-join -o {{.OUTPUT}} -c {{.CSV}} {{.TILES}}
-
-  decode:
-    deps: [tippecanoe-install]
-    vars:
-      TILES: '{{.TILES}}'
-      Z: '{{.Z | default "10"}}'
-      X: '{{.X}}'
-      Y: '{{.Y}}'
-    cmds:
-      - tippecanoe-decode {{.TILES}} {{.Z}} {{.X}} {{.Y}}
-
-  from-duckdb:
-    deps: [tippecanoe-install]
-    vars:
-      TABLE: '{{.TABLE}}'
-      NAME: '{{.NAME | default .TABLE}}'
-      DUCKDB: '{{.BIN_DIR}}/duckdb'
-      DUCKDB_FILE: '{{.DATA_DIR}}/duckdb/geo.duckdb'
-    cmds:
-      - mkdir -p {{.PMTILES_DIR}}
-      - |
-        {{.DUCKDB}} {{.DUCKDB_FILE}} -c "
-          LOAD spatial;
-          COPY (
-            SELECT json_object(
-              'type', 'Feature',
-              'geometry', ST_AsGeoJSON(geometry)::JSON,
-              'properties', to_json(columns(* EXCLUDE geometry))
-            )
-            FROM {{.TABLE}}
-          ) TO '/tmp/{{.TABLE}}.geojsonl' (FORMAT CSV, HEADER false, QUOTE '');
-        "
-      - tippecanoe -o {{.PMTILES_DIR}}/{{.NAME}}.pmtiles -zg --force /tmp/{{.TABLE}}.geojsonl
-      - rm /tmp/{{.TABLE}}.geojsonl
-
   docker:generate:
-    deps: [tippecanoe-install:docker]
+    desc: Generate PMTiles via Docker
     vars:
       FILE: '{{.FILE}}'
       NAME: '{{.NAME | default "tiles"}}'
     cmds:
       - mkdir -p {{.PMTILES_DIR}}
+      - docker pull {{.TIPPECANOE_IMAGE}}
       - |
         docker run --rm \
           -v $(pwd):/data \

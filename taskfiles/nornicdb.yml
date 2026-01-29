@@ -9,20 +9,12 @@ vars:
 
 tasks:
   pull:
+    desc: Pull NornicDB Docker image
     cmds:
       - docker pull {{.NORNICDB_IMAGE}}
 
-  run:
-    cmds:
-      - |
-        docker run --rm \
-          --name {{.NORNICDB_CONTAINER}} \
-          -p {{.NORNICDB_HTTP_PORT}}:7474 \
-          -p {{.NORNICDB_BOLT_PORT}}:7687 \
-          -v {{.DATA_DIR}}/nornicdb:/data \
-          {{.NORNICDB_IMAGE}}
-
   nornicdb-start:
+    desc: Start NornicDB as daemon
     cmds:
       - mkdir -p {{.DATA_DIR}}/nornicdb
       - |
@@ -35,103 +27,36 @@ tasks:
       - echo "NornicDB started at http://localhost:{{.NORNICDB_HTTP_PORT}}"
 
   nornicdb-stop:
+    desc: Stop NornicDB container
     cmds:
       - docker stop {{.NORNICDB_CONTAINER}} || true
       - docker rm {{.NORNICDB_CONTAINER}} || true
 
   nornicdb-restart:
+    desc: Restart NornicDB
     cmds:
       - task: nornicdb-stop
       - task: nornicdb-start
 
   nornicdb-health:
+    desc: Health check NornicDB
     cmds:
       - curl -sf http://localhost:{{.NORNICDB_HTTP_PORT}}/health > /dev/null
 
   nornicdb-status:
+    desc: Show NornicDB container status
     cmds:
       - docker ps -f name={{.NORNICDB_CONTAINER}} --format "table {{`{{.Names}}`}}\t{{`{{.Status}}`}}\t{{`{{.Ports}}`}}"
 
-  logs:
-    cmds:
-      - docker logs {{.NORNICDB_CONTAINER}} {{.CLI_ARGS}}
-
-  logs:follow:
-    cmds:
-      - docker logs -f {{.NORNICDB_CONTAINER}}
-
   nornicdb-shell:
+    desc: Interactive shell in NornicDB container
     cmds:
       - docker exec -it {{.NORNICDB_CONTAINER}} /bin/sh
 
-  # Cypher query helpers
-  cypher:
-    vars:
-      QUERY: '{{.QUERY}}'
-    cmds:
-      - |
-        curl -s -X POST http://localhost:{{.NORNICDB_HTTP_PORT}}/db/nornic/tx/commit \
-          -H "Content-Type: application/json" \
-          -d '{"statements": [{"statement": "{{.QUERY}}"}]}' | jq .
-
-  nornicdb-info:
-    cmds:
-      - |
-        curl -s -X POST http://localhost:{{.NORNICDB_HTTP_PORT}}/db/nornic/tx/commit \
-          -H "Content-Type: application/json" \
-          -d '{"statements": [{"statement": "CALL dbms.components() YIELD name, versions RETURN name, versions"}]}' | jq .
-
-  stats:
-    cmds:
-      - |
-        curl -s -X POST http://localhost:{{.NORNICDB_HTTP_PORT}}/db/nornic/tx/commit \
-          -H "Content-Type: application/json" \
-          -d '{"statements": [{"statement": "MATCH (n) RETURN count(n) as nodes"}, {"statement": "MATCH ()-[r]->() RETURN count(r) as relationships"}]}' | jq .
-
-  # Vector search
-  search:
-    vars:
-      QUERY: '{{.QUERY}}'
-      LIMIT: '{{.LIMIT | default "10"}}'
-    cmds:
-      - |
-        curl -s -X POST http://localhost:{{.NORNICDB_HTTP_PORT}}/nornicdb/search \
-          -H "Content-Type: application/json" \
-          -d '{"query": "{{.QUERY}}", "limit": {{.LIMIT}}}' | jq .
-
-  # Data management
-  backup:
-    cmds:
-      - mkdir -p {{.DATA_DIR}}/backups
-      - |
-        docker exec {{.NORNICDB_CONTAINER}} tar -czf - /data | \
-          cat > {{.DATA_DIR}}/backups/nornicdb-$(date +%Y%m%d-%H%M%S).tar.gz
-      - echo "Backup saved to {{.DATA_DIR}}/backups/"
-
   nornicdb-clean:
+    desc: Delete all NornicDB data
     prompt: This will delete all NornicDB data. Continue?
     cmds:
       - task: nornicdb-stop
       - rm -rf {{.DATA_DIR}}/nornicdb
       - echo "NornicDB data removed"
-
-  # Image variants
-  pull:metal:
-    cmds:
-      - docker pull timothyswt/nornicdb-arm64-metal:latest
-
-  pull:metal-bge:
-    cmds:
-      - docker pull timothyswt/nornicdb-arm64-metal-bge:latest
-
-  pull:metal-heimdall:
-    cmds:
-      - docker pull timothyswt/nornicdb-arm64-metal-bge-heimdall:latest
-
-  pull:cuda:
-    cmds:
-      - docker pull timothyswt/nornicdb-amd64-cuda-bge:latest
-
-  pull:cpu:
-    cmds:
-      - docker pull timothyswt/nornicdb-amd64-cpu:latest

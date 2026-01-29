@@ -1,6 +1,4 @@
 # Restish: API testing and exploration
-# Maps to .src/restish
-# Usage: task restish:health, task restish:smoke
 version: '3'
 
 vars:
@@ -8,68 +6,23 @@ vars:
 
 tasks:
   restish-install:
+    desc: Install restish CLI
     status:
       - test -f {{.BIN_DIR}}/restish
     cmds:
       - GOBIN={{.ROOT_DIR}}/{{.BIN_DIR}} go install github.com/rest-sh/restish@latest
 
-  restish-default:
-    deps: [restish-install]
-    env:
-      RESTISH_CONFIG_DIR: .
-    cmds:
-      - '{{.BIN_DIR}}/restish geo --help'
-
   sync:
+    desc: Sync API definitions
     deps: [restish-install]
     env:
       RESTISH_CONFIG_DIR: .
     cmds:
       - '{{.BIN_DIR}}/restish api sync geo'
 
-  restish-health:
-    env:
-      RESTISH_CONFIG_DIR: .
-    cmds:
-      - '{{.BIN_DIR}}/restish geo health'
-
-  restish-info:
-    env:
-      RESTISH_CONFIG_DIR: .
-    cmds:
-      - '{{.BIN_DIR}}/restish geo get-info'
-
-  layers:
-    env:
-      RESTISH_CONFIG_DIR: .
-    cmds:
-      - '{{.BIN_DIR}}/restish geo list-layers'
-
-  sources:
-    env:
-      RESTISH_CONFIG_DIR: .
-    cmds:
-      - '{{.BIN_DIR}}/restish geo list-sources -o table'
-
-  tiles:
-    env:
-      RESTISH_CONFIG_DIR: .
-    cmds:
-      - '{{.BIN_DIR}}/restish geo list-tiles -o table'
-
-  restish-query:
-    env:
-      RESTISH_CONFIG_DIR: .
-    cmds:
-      - '{{.BIN_DIR}}/restish geo query {{.CLI_ARGS}}'
-
-  links:
-    env:
-      RESTISH_CONFIG_DIR: .
-    cmds:
-      - '{{.BIN_DIR}}/restish links http://localhost:8086/'
-
   smoke:
+    desc: Run API smoke tests
+    deps: [restish-install]
     env:
       RESTISH_CONFIG_DIR: .
     cmds:
@@ -86,5 +39,6 @@ tasks:
       - echo "--- query ---" && echo '{"query":"SELECT 1 as ok"}' | {{.BIN_DIR}}/restish geo query
 
   test:client:
+    desc: Run Go integration tests for geoclient
     cmds:
       - go test -tags=integration -v -count=1 ./pkg/geoclient/
