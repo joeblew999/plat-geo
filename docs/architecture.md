@@ -91,6 +91,18 @@ This project combines two Go technologies for a seamless full-stack experience:
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+## Hypermedia Layer (`internal/humastar`)
+
+On top of Huma's REST+SSE, the `humastar` package adds a **fully automatic hypermedia mesh**:
+
+- **RFC 8288 Link headers** on every response — structural links (collection/item/up/sibling) generated at startup from the OpenAPI spec
+- **State-dependent actions** — response bodies implement `Actor` to emit conditional action links (publish/unpublish, delete, duplicate) with method, title, and schema extension parameters
+- **Automatic pagination** — `PageBody[T]` emits first/prev/next/last rels
+- **Cross-resource links** — resources link to related resources across the API graph
+- **Zero configuration** — add a route, the links appear
+
+Any generic client can navigate the entire API starting from `/health` by following Link headers alone. See **[Hypermedia & HATEOAS](./hypermedia.md)** for the full design.
+
 ## Dual API Design
 
 The same service layer powers two API styles:

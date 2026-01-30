@@ -4,6 +4,23 @@
  */
 
 export interface paths {
+    "/api/v1/editor/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get API v1 editor events */
+        get: operations["get-api-v1-editor-events"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/editor/layers": {
         parameters: {
             query?: never;
@@ -48,23 +65,6 @@ export interface paths {
         };
         /** Get API v1 editor sources */
         get: operations["get-api-v1-editor-sources"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/editor/sources/list": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get API v1 editor sources list */
-        get: operations["get-api-v1-editor-sources-list"];
         put?: never;
         post?: never;
         delete?: never;
@@ -233,6 +233,92 @@ export interface paths {
         patch: operations["patch-api-v-1-layers-by-id"];
         trace?: never;
     };
+    "/api/v1/layers/{id}/duplicate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post API v1 layers by ID duplicate */
+        post: operations["post-api-v1-layers-by-id-duplicate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/layers/{id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post API v1 layers by ID publish */
+        post: operations["post-api-v1-layers-by-id-publish"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/layers/{id}/styles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List API v1 layers by ID styles */
+        get: operations["list-api-v1-layers-by-id-styles"];
+        put?: never;
+        /** Post API v1 layers by ID styles */
+        post: operations["post-api-v1-layers-by-id-styles"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/layers/{id}/styles/{styleId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete API v1 layers by ID styles by style ID */
+        delete: operations["delete-api-v1-layers-by-id-styles-by-style-id"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/layers/{id}/unpublish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post API v1 layers by ID unpublish */
+        post: operations["post-api-v1-layers-by-id-unpublish"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/query": {
         parameters: {
             query?: never;
@@ -257,8 +343,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List API v1 sources */
-        get: operations["list-api-v1-sources"];
+        /** Get API v1 sources */
+        get: operations["get-api-v1-sources"];
         put?: never;
         post?: never;
         delete?: never;
@@ -291,8 +377,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List API v1 tiles */
-        get: operations["list-api-v1-tiles"];
+        /** Get API v1 tiles */
+        get: operations["get-api-v1-tiles"];
         put?: never;
         post?: never;
         delete?: never;
@@ -335,6 +421,16 @@ export interface components {
             layer: components["schemas"]["LayerConfig"];
             /** @description Result message */
             message: string;
+        };
+        DuplicateInput: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example http://0.0.0.0:8086/schemas/DuplicateInput.json
+             */
+            readonly $schema?: string;
+            /** @description Name for the duplicate layer */
+            name: string;
         };
         ErrorDetail: {
             /** @description Where the error occurred, e.g. 'body.items[3].tags' or 'path.thing-id' */
@@ -432,6 +528,78 @@ export interface components {
             /** @description The value to set */
             value?: unknown;
         };
+        LayerBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example http://0.0.0.0:8086/schemas/LayerBody.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description Whether layer is visible by default
+             * @default true
+             * @example true
+             */
+            defaultVisible: boolean;
+            /**
+             * @description Source file name
+             * @example buildings.pmtiles
+             */
+            file: string;
+            /**
+             * @description Fill color (CSS)
+             * @default #3388ff
+             * @example #3388ff
+             */
+            fill: string;
+            /**
+             * @description Geometry type
+             * @default polygon
+             * @example polygon
+             * @enum {string}
+             */
+            geomType: "polygon" | "line" | "point";
+            /**
+             * @description Unique layer identifier
+             * @example buildings
+             */
+            id?: string;
+            /** @description Legend entries for this layer */
+            legend?: components["schemas"]["LegendItem"][] | null;
+            /**
+             * @description Display name
+             * @example Buildings
+             */
+            name: string;
+            /**
+             * Format: double
+             * @description Layer opacity (0-1)
+             * @default 0.7
+             * @example 0.7
+             */
+            opacity: number;
+            /**
+             * @description Layer name within PMTiles
+             * @default default
+             * @example buildings
+             */
+            pmtilesLayer: string;
+            /**
+             * @description Whether layer is published
+             * @default false
+             */
+            published: boolean;
+            /** @description Conditional styling rules */
+            renderRules?: components["schemas"]["RenderRule"][] | null;
+            /**
+             * @description Stroke color (CSS)
+             * @default #2266cc
+             * @example #2266cc
+             */
+            stroke: string;
+            /** @description Named style variants */
+            styles?: components["schemas"]["Style"][] | null;
+        };
         LayerConfig: {
             /**
              * Format: uri
@@ -488,6 +656,11 @@ export interface components {
              * @example buildings
              */
             pmtilesLayer: string;
+            /**
+             * @description Whether layer is published
+             * @default false
+             */
+            published: boolean;
             /** @description Conditional styling rules */
             renderRules?: components["schemas"]["RenderRule"][] | null;
             /**
@@ -496,6 +669,8 @@ export interface components {
              * @example #2266cc
              */
             stroke: string;
+            /** @description Named style variants */
+            styles?: components["schemas"]["Style"][] | null;
         };
         LegendItem: {
             /** @description Legend color (CSS) */
@@ -512,6 +687,56 @@ export interface components {
             readonly $schema?: string;
             /** @description Result message */
             message: string;
+        };
+        PageBodySourceFile: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example http://0.0.0.0:8086/schemas/PageBodySourceFile.json
+             */
+            readonly $schema?: string;
+            /** @description Items */
+            data: components["schemas"]["SourceFile"][] | null;
+            /**
+             * Format: int64
+             * @description Page size
+             */
+            limit: number;
+            /**
+             * Format: int64
+             * @description Current offset
+             */
+            offset: number;
+            /**
+             * Format: int64
+             * @description Total number of items
+             */
+            total: number;
+        };
+        PageBodyTileFile: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example http://0.0.0.0:8086/schemas/PageBodyTileFile.json
+             */
+            readonly $schema?: string;
+            /** @description Items */
+            data: components["schemas"]["TileFile"][] | null;
+            /**
+             * Format: int64
+             * @description Page size
+             */
+            limit: number;
+            /**
+             * Format: int64
+             * @description Current offset
+             */
+            offset: number;
+            /**
+             * Format: int64
+             * @description Total number of items
+             */
+            total: number;
         };
         "Post-api-v1-queryRequest": {
             /**
@@ -584,6 +809,32 @@ export interface components {
              */
             size: string;
         };
+        Style: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example http://0.0.0.0:8086/schemas/Style.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description Fill color (CSS)
+             * @default #3388ff
+             */
+            fill: string;
+            /** @description Style name */
+            name: string;
+            /**
+             * Format: double
+             * @description Opacity (0-1)
+             * @default 0.7
+             */
+            opacity: number;
+            /**
+             * @description Stroke color (CSS)
+             * @default #2266cc
+             */
+            stroke: string;
+        };
         TablesBody: {
             /**
              * Format: uri
@@ -615,6 +866,33 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    "get-api-v1-editor-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "get-api-v1-editor-layers": {
         parameters: {
             query?: never;
@@ -704,33 +982,6 @@ export interface operations {
         };
     };
     "get-api-v1-editor-sources": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
-    "get-api-v1-editor-sources-list": {
         parameters: {
             query?: never;
             header?: never;
@@ -1052,7 +1303,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["LayerConfig"];
+                    "application/json": components["schemas"]["LayerBody"];
                 };
             };
             /** @description Error */
@@ -1091,7 +1342,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["LayerConfig"];
+                    "application/json": components["schemas"]["LayerBody"];
                 };
             };
             /** @description Error */
@@ -1212,6 +1463,11 @@ export interface operations {
                      * @example buildings
                      */
                     pmtilesLayer?: string;
+                    /**
+                     * @description Whether layer is published
+                     * @default false
+                     */
+                    published?: boolean;
                     /** @description Conditional styling rules */
                     renderRules?: unknown[];
                     /**
@@ -1220,6 +1476,8 @@ export interface operations {
                      * @example #2266cc
                      */
                     stroke?: string;
+                    /** @description Named style variants */
+                    styles?: unknown[];
                 };
                 "application/merge-patch+shorthand": {
                     /**
@@ -1277,6 +1535,11 @@ export interface operations {
                      * @example buildings
                      */
                     pmtilesLayer?: string;
+                    /**
+                     * @description Whether layer is published
+                     * @default false
+                     */
+                    published?: boolean;
                     /** @description Conditional styling rules */
                     renderRules?: unknown[];
                     /**
@@ -1285,6 +1548,8 @@ export interface operations {
                      * @example #2266cc
                      */
                     stroke?: string;
+                    /** @description Named style variants */
+                    styles?: unknown[];
                 };
             };
         };
@@ -1295,7 +1560,224 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["LayerConfig"];
+                    "application/json": components["schemas"]["LayerBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "post-api-v1-layers-by-id-duplicate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description Layer ID
+                 * @example buildings
+                 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DuplicateInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedLayerBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "post-api-v1-layers-by-id-publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description Layer ID
+                 * @example buildings
+                 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LayerBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "list-api-v1-layers-by-id-styles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description Layer ID
+                 * @example buildings
+                 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Style"][] | null;
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "post-api-v1-layers-by-id-styles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description Layer ID
+                 * @example buildings
+                 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Style"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Style"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "delete-api-v1-layers-by-id-styles-by-style-id": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Layer ID */
+                id: string;
+                /** @description Style name */
+                styleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "post-api-v1-layers-by-id-unpublish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description Layer ID
+                 * @example buildings
+                 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LayerBody"];
                 };
             };
             /** @description Error */
@@ -1342,9 +1824,14 @@ export interface operations {
             };
         };
     };
-    "list-api-v1-sources": {
+    "get-api-v1-sources": {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Items per page */
+                limit?: number;
+                /** @description Items to skip */
+                offset?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1357,7 +1844,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SourceFile"][] | null;
+                    "application/json": components["schemas"]["PageBodySourceFile"];
                 };
             };
             /** @description Error */
@@ -1400,9 +1887,14 @@ export interface operations {
             };
         };
     };
-    "list-api-v1-tiles": {
+    "get-api-v1-tiles": {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Items per page */
+                limit?: number;
+                /** @description Items to skip */
+                offset?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1415,7 +1907,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TileFile"][] | null;
+                    "application/json": components["schemas"]["PageBodyTileFile"];
                 };
             };
             /** @description Error */

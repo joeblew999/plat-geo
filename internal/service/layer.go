@@ -67,6 +67,7 @@ func (s *LayerService) Create(layer LayerConfig) (LayerConfig, error) {
 		return LayerConfig{}, err
 	}
 
+	DefaultBus.Publish(Event{Resource: "layers", Action: "created", ID: layer.ID})
 	return layer, nil
 }
 
@@ -85,6 +86,7 @@ func (s *LayerService) Update(id string, layer LayerConfig) (LayerConfig, error)
 		return LayerConfig{}, err
 	}
 
+	DefaultBus.Publish(Event{Resource: "layers", Action: "updated", ID: id})
 	return layer, nil
 }
 
@@ -98,7 +100,140 @@ func (s *LayerService) Delete(id string) error {
 	}
 
 	delete(s.layers, id)
-	return s.saveToDisk()
+	if err := s.saveToDisk(); err != nil {
+		return err
+	}
+	DefaultBus.Publish(Event{Resource: "layers", Action: "deleted", ID: id})
+	return nil
+}
+
+// Duplicate copies a layer with a new name and auto-generated ID.
+func (s *LayerService) Duplicate(id, newName string) (LayerConfig, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	src, exists := s.layers[id]
+	if !exists {
+		return LayerConfig{}, fmt.Errorf("layer %q not found", id)
+	}
+
+	dup := src
+	dup.Name = newName
+	dup.ID = generateID(newName)
+	if _, taken := s.layers[dup.ID]; taken {
+		return LayerConfig{}, fmt.Errorf("layer with ID %q already exists", dup.ID)
+	}
+
+	s.layers[dup.ID] = dup
+	if err := s.saveToDisk(); err != nil {
+		return LayerConfig{}, err
+	}
+	DefaultBus.Publish(Event{Resource: "layers", Action: "created", ID: dup.ID})
+	return dup, nil
+}
+
+// Publish marks a layer as published.
+func (s *LayerService) Publish(id string) (LayerConfig, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	layer, exists := s.layers[id]
+	if !exists {
+		return LayerConfig{}, fmt.Errorf("layer %q not found", id)
+	}
+	layer.Published = true
+	s.layers[id] = layer
+	if err := s.saveToDisk(); err != nil {
+		return LayerConfig{}, err
+	}
+	DefaultBus.Publish(Event{Resource: "layers", Action: "updated", ID: id})
+	return layer, nil
+}
+
+// Unpublish marks a layer as unpublished.
+func (s *LayerService) Unpublish(id string) (LayerConfig, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	layer, exists := s.layers[id]
+	if !exists {
+		return LayerConfig{}, fmt.Errorf("layer %q not found", id)
+	}
+	layer.Published = false
+	s.layers[id] = layer
+	if err := s.saveToDisk(); err != nil {
+		return LayerConfig{}, err
+	}
+	DefaultBus.Publish(Event{Resource: "layers", Action: "updated", ID: id})
+	return layer, nil
+}
+
+// ListStyles returns the styles for a layer.
+func (s *LayerService) ListStyles(layerID string) ([]Style, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	layer, exists := s.layers[layerID]
+	if !exists {
+		return nil, fmt.Errorf("layer %q not found", layerID)
+	}
+	if layer.Styles == nil {
+		return []Style{}, nil
+	}
+	return layer.Styles, nil
+}
+
+// AddStyle adds a named style to a layer.
+func (s *LayerService) AddStyle(layerID string, style Style) (Style, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	layer, exists := s.layers[layerID]
+	if !exists {
+		return Style{}, fmt.Errorf("layer %q not found", layerID)
+	}
+	for _, existing := range layer.Styles {
+		if existing.Name == style.Name {
+			return Style{}, fmt.Errorf("style %q already exists", style.Name)
+		}
+	}
+	layer.Styles = append(layer.Styles, style)
+	s.layers[layerID] = layer
+	if err := s.saveToDisk(); err != nil {
+		return Style{}, err
+	}
+	DefaultBus.Publish(Event{Resource: "layers", Action: "updated", ID: layerID})
+	return style, nil
+}
+
+// DeleteStyle removes a named style from a layer.
+func (s *LayerService) DeleteStyle(layerID, styleName string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	layer, exists := s.layers[layerID]
+	if !exists {
+		return fmt.Errorf("layer %q not found", layerID)
+	}
+	found := false
+	styles := make([]Style, 0, len(layer.Styles))
+	for _, st := range layer.Styles {
+		if st.Name == styleName {
+			found = true
+			continue
+		}
+		styles = append(styles, st)
+	}
+	if !found {
+		return fmt.Errorf("style %q not found", styleName)
+	}
+	layer.Styles = styles
+	s.layers[layerID] = layer
+	if err := s.saveToDisk(); err != nil {
+		return err
+	}
+	DefaultBus.Publish(Event{Resource: "layers", Action: "updated", ID: layerID})
+	return nil
 }
 
 // configFile returns the path to the layers config file.

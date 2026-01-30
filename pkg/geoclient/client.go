@@ -20,6 +20,11 @@ type CreatedLayerBody struct {
 	Message string      `json:"message" doc:"Result message"`
 }
 
+// DuplicateInput represents the DuplicateInput schema
+type DuplicateInput struct {
+	Name string `json:"name" doc:"Name for the duplicate layer" minLength:"1" maxLength:"100"`
+}
+
 // ErrorDetail represents the ErrorDetail schema
 type ErrorDetail struct {
 	Location string `json:"location,omitempty" doc:"Where the error occurred, e.g. 'body.items[3].tags' or 'path.thing-id'"`
@@ -60,6 +65,23 @@ type JSONPatchOp struct {
 	Value any    `json:"value,omitempty" doc:"The value to set"`
 }
 
+// LayerBody represents the LayerBody schema
+type LayerBody struct {
+	DefaultVisible bool         `json:"defaultVisible" doc:"Whether layer is visible by default" default:"true" example:"true"`
+	File           string       `json:"file" doc:"Source file name" example:"buildings.pmtiles"`
+	Fill           string       `json:"fill,omitempty" doc:"Fill color (CSS)" default:"#3388ff" example:"#3388ff"`
+	GeomType       string       `json:"geomType" doc:"Geometry type" enum:"polygon,line,point" default:"polygon" example:"polygon"`
+	ID             string       `json:"id,omitempty" doc:"Unique layer identifier" example:"buildings"`
+	Legend         []LegendItem `json:"legend,omitempty" doc:"Legend entries for this layer"`
+	Name           string       `json:"name" doc:"Display name" minLength:"1" maxLength:"100" example:"Buildings"`
+	Opacity        float64      `json:"opacity,omitempty" doc:"Layer opacity (0-1)" minimum:"0" maximum:"1" default:"0.7" format:"double" example:"0.7"`
+	PmtilesLayer   string       `json:"pmtilesLayer,omitempty" doc:"Layer name within PMTiles" default:"default" example:"buildings"`
+	Published      bool         `json:"published" doc:"Whether layer is published" default:"false"`
+	RenderRules    []RenderRule `json:"renderRules,omitempty" doc:"Conditional styling rules"`
+	Stroke         string       `json:"stroke,omitempty" doc:"Stroke color (CSS)" default:"#2266cc" example:"#2266cc"`
+	Styles         []Style      `json:"styles,omitempty" doc:"Named style variants"`
+}
+
 // LayerConfig represents the LayerConfig schema
 type LayerConfig struct {
 	DefaultVisible bool         `json:"defaultVisible" doc:"Whether layer is visible by default" default:"true" example:"true"`
@@ -71,8 +93,10 @@ type LayerConfig struct {
 	Name           string       `json:"name" doc:"Display name" minLength:"1" maxLength:"100" example:"Buildings"`
 	Opacity        float64      `json:"opacity,omitempty" doc:"Layer opacity (0-1)" minimum:"0" maximum:"1" default:"0.7" format:"double" example:"0.7"`
 	PmtilesLayer   string       `json:"pmtilesLayer,omitempty" doc:"Layer name within PMTiles" default:"default" example:"buildings"`
+	Published      bool         `json:"published" doc:"Whether layer is published" default:"false"`
 	RenderRules    []RenderRule `json:"renderRules,omitempty" doc:"Conditional styling rules"`
 	Stroke         string       `json:"stroke,omitempty" doc:"Stroke color (CSS)" default:"#2266cc" example:"#2266cc"`
+	Styles         []Style      `json:"styles,omitempty" doc:"Named style variants"`
 }
 
 // LegendItem represents the LegendItem schema
@@ -84,6 +108,22 @@ type LegendItem struct {
 // MessageBody represents the MessageBody schema
 type MessageBody struct {
 	Message string `json:"message" doc:"Result message"`
+}
+
+// PageBodySourceFile represents the PageBodySourceFile schema
+type PageBodySourceFile struct {
+	Data   []SourceFile `json:"data" doc:"Items"`
+	Limit  int64        `json:"limit" doc:"Page size" format:"int64"`
+	Offset int64        `json:"offset" doc:"Current offset" format:"int64"`
+	Total  int64        `json:"total" doc:"Total number of items" format:"int64"`
+}
+
+// PageBodyTileFile represents the PageBodyTileFile schema
+type PageBodyTileFile struct {
+	Data   []TileFile `json:"data" doc:"Items"`
+	Limit  int64      `json:"limit" doc:"Page size" format:"int64"`
+	Offset int64      `json:"offset" doc:"Current offset" format:"int64"`
+	Total  int64      `json:"total" doc:"Total number of items" format:"int64"`
 }
 
 // PostAPIV1QueryRequest represents the Post-api-v1-queryRequest schema
@@ -114,6 +154,14 @@ type SourceFile struct {
 	FileType string `json:"fileType" doc:"File type: GeoJSON or GeoParquet" example:"GeoJSON"`
 	Name     string `json:"name" doc:"File name" example:"buildings.geojson"`
 	Size     string `json:"size" doc:"Human-readable file size" example:"1.2 MB"`
+}
+
+// Style represents the Style schema
+type Style struct {
+	Fill    string  `json:"fill,omitempty" doc:"Fill color (CSS)" default:"#3388ff"`
+	Name    string  `json:"name" doc:"Style name" minLength:"1" maxLength:"50"`
+	Opacity float64 `json:"opacity,omitempty" doc:"Opacity (0-1)" minimum:"0" maximum:"1" default:"0.7" format:"double"`
+	Stroke  string  `json:"stroke,omitempty" doc:"Stroke color (CSS)" default:"#2266cc"`
 }
 
 // TablesBody represents the TablesBody schema
@@ -192,13 +240,35 @@ func WithOptions(applier OptionsApplier) Option {
 	}
 }
 
+// GetAPIV1SourcesOptions contains optional parameters for GetAPIV1Sources
+type GetAPIV1SourcesOptions struct {
+	Limit  int64 `json:"limit,omitempty"`
+	Offset int64 `json:"offset,omitempty"`
+}
+
+// Apply implements OptionsApplier for GetAPIV1SourcesOptions
+func (o GetAPIV1SourcesOptions) Apply(opts *RequestOptions) {
+	if o.Limit != 0 {
+		if opts.CustomQuery == nil {
+			opts.CustomQuery = make(map[string]string)
+		}
+		opts.CustomQuery["limit"] = fmt.Sprintf("%v", o.Limit)
+	}
+	if o.Offset != 0 {
+		if opts.CustomQuery == nil {
+			opts.CustomQuery = make(map[string]string)
+		}
+		opts.CustomQuery["offset"] = fmt.Sprintf("%v", o.Offset)
+	}
+}
+
 // PlatGeoAPIClient defines the interface for the API client
 type PlatGeoAPIClient interface {
+	GetAPIV1EditorEvents(ctx context.Context, opts ...Option) (*http.Response, error)
 	GetAPIV1EditorLayers(ctx context.Context, opts ...Option) (*http.Response, error)
 	PostAPIV1EditorLayers(ctx context.Context, opts ...Option) (*http.Response, error)
 	DeleteAPIV1EditorLayersByID(ctx context.Context, id string, opts ...Option) (*http.Response, error)
 	GetAPIV1EditorSources(ctx context.Context, opts ...Option) (*http.Response, error)
-	GetAPIV1EditorSourcesList(ctx context.Context, opts ...Option) (*http.Response, error)
 	GetAPIV1EditorSourcesSelect(ctx context.Context, opts ...Option) (*http.Response, error)
 	PostAPIV1EditorSourcesUpload(ctx context.Context, opts ...Option) (*http.Response, error)
 	DeleteAPIV1EditorSourcesByFilename(ctx context.Context, filename string, opts ...Option) (*http.Response, error)
@@ -208,14 +278,20 @@ type PlatGeoAPIClient interface {
 	GetAPIV1Info(ctx context.Context, opts ...Option) (*http.Response, InfoBody, error)
 	GetAPIV1Layers(ctx context.Context, opts ...Option) (*http.Response, map[string]any, error)
 	PostAPIV1Layers(ctx context.Context, body LayerConfig, opts ...Option) (*http.Response, CreatedLayerBody, error)
-	GetAPIV1LayersByID(ctx context.Context, id string, opts ...Option) (*http.Response, LayerConfig, error)
-	PutAPIV1LayersByID(ctx context.Context, id string, body LayerConfig, opts ...Option) (*http.Response, LayerConfig, error)
+	GetAPIV1LayersByID(ctx context.Context, id string, opts ...Option) (*http.Response, LayerBody, error)
+	PutAPIV1LayersByID(ctx context.Context, id string, body LayerConfig, opts ...Option) (*http.Response, LayerBody, error)
 	DeleteAPIV1LayersByID(ctx context.Context, id string, opts ...Option) (*http.Response, MessageBody, error)
-	PatchAPIV1LayersByID(ctx context.Context, id string, opts ...Option) (*http.Response, LayerConfig, error)
+	PatchAPIV1LayersByID(ctx context.Context, id string, opts ...Option) (*http.Response, LayerBody, error)
+	PostAPIV1LayersByIDDuplicate(ctx context.Context, id string, body DuplicateInput, opts ...Option) (*http.Response, CreatedLayerBody, error)
+	PostAPIV1LayersByIDPublish(ctx context.Context, id string, opts ...Option) (*http.Response, LayerBody, error)
+	ListAPIV1LayersByIDStyles(ctx context.Context, id string, opts ...Option) (*http.Response, []Style, error)
+	PostAPIV1LayersByIDStyles(ctx context.Context, id string, body Style, opts ...Option) (*http.Response, Style, error)
+	DeleteAPIV1LayersByIDStylesByStyleID(ctx context.Context, id string, styleID string, opts ...Option) (*http.Response, MessageBody, error)
+	PostAPIV1LayersByIDUnpublish(ctx context.Context, id string, opts ...Option) (*http.Response, LayerBody, error)
 	PostAPIV1Query(ctx context.Context, body PostAPIV1QueryRequest, opts ...Option) (*http.Response, QueryBody, error)
-	ListAPIV1Sources(ctx context.Context, opts ...Option) (*http.Response, []SourceFile, error)
+	GetAPIV1Sources(ctx context.Context, opts ...Option) (*http.Response, PageBodySourceFile, error)
 	GetAPIV1Tables(ctx context.Context, opts ...Option) (*http.Response, TablesBody, error)
-	ListAPIV1Tiles(ctx context.Context, opts ...Option) (*http.Response, []TileFile, error)
+	GetAPIV1Tiles(ctx context.Context, opts ...Option) (*http.Response, PageBodyTileFile, error)
 	GetHealth(ctx context.Context, opts ...Option) (*http.Response, HealthBody, error)
 	Follow(ctx context.Context, link string, result any, opts ...Option) (*http.Response, error)
 }
@@ -240,6 +316,52 @@ func NewWithClient(baseURL string, client *http.Client) PlatGeoAPIClient {
 		baseURL:    baseURL,
 		httpClient: client,
 	}
+}
+
+// GetAPIV1EditorEvents calls the GET /api/v1/editor/events endpoint
+func (c *PlatGeoAPIClientImpl) GetAPIV1EditorEvents(ctx context.Context, opts ...Option) (*http.Response, error) {
+	// Apply options
+	reqOpts := &RequestOptions{}
+	for _, opt := range opts {
+		opt(reqOpts)
+	}
+
+	// Build URL with path parameters
+	pathTemplate := "/api/v1/editor/events"
+
+	u, err := url.Parse(c.baseURL + pathTemplate)
+	if err != nil {
+		return nil, fmt.Errorf("invalid URL: %w", err)
+	}
+
+	// Apply query parameters
+	reqOpts.applyQueryParams(u)
+
+	// Prepare request body
+	var reqBody io.Reader
+
+	// Create request
+	req, err := http.NewRequestWithContext(ctx, "GET", u.String(), reqBody)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// Set content type and apply custom headers
+	reqOpts.applyHeaders(req)
+
+	// Execute request
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Handle error responses
+	if resp.StatusCode >= 400 {
+		body, _ := io.ReadAll(resp.Body)
+		return resp, fmt.Errorf("API error %d: %s", resp.StatusCode, string(body))
+	}
+	return resp, nil
 }
 
 // GetAPIV1EditorLayers calls the GET /api/v1/editor/layers endpoint
@@ -391,52 +513,6 @@ func (c *PlatGeoAPIClientImpl) GetAPIV1EditorSources(ctx context.Context, opts .
 
 	// Build URL with path parameters
 	pathTemplate := "/api/v1/editor/sources"
-
-	u, err := url.Parse(c.baseURL + pathTemplate)
-	if err != nil {
-		return nil, fmt.Errorf("invalid URL: %w", err)
-	}
-
-	// Apply query parameters
-	reqOpts.applyQueryParams(u)
-
-	// Prepare request body
-	var reqBody io.Reader
-
-	// Create request
-	req, err := http.NewRequestWithContext(ctx, "GET", u.String(), reqBody)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	// Set content type and apply custom headers
-	reqOpts.applyHeaders(req)
-
-	// Execute request
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("request failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	// Handle error responses
-	if resp.StatusCode >= 400 {
-		body, _ := io.ReadAll(resp.Body)
-		return resp, fmt.Errorf("API error %d: %s", resp.StatusCode, string(body))
-	}
-	return resp, nil
-}
-
-// GetAPIV1EditorSourcesList calls the GET /api/v1/editor/sources/list endpoint
-func (c *PlatGeoAPIClientImpl) GetAPIV1EditorSourcesList(ctx context.Context, opts ...Option) (*http.Response, error) {
-	// Apply options
-	reqOpts := &RequestOptions{}
-	for _, opt := range opts {
-		opt(reqOpts)
-	}
-
-	// Build URL with path parameters
-	pathTemplate := "/api/v1/editor/sources/list"
 
 	u, err := url.Parse(c.baseURL + pathTemplate)
 	if err != nil {
@@ -915,7 +991,7 @@ func (c *PlatGeoAPIClientImpl) PostAPIV1Layers(ctx context.Context, body LayerCo
 }
 
 // GetAPIV1LayersByID calls the GET /api/v1/layers/{id} endpoint
-func (c *PlatGeoAPIClientImpl) GetAPIV1LayersByID(ctx context.Context, id string, opts ...Option) (*http.Response, LayerConfig, error) {
+func (c *PlatGeoAPIClientImpl) GetAPIV1LayersByID(ctx context.Context, id string, opts ...Option) (*http.Response, LayerBody, error) {
 	// Apply options
 	reqOpts := &RequestOptions{}
 	for _, opt := range opts {
@@ -928,7 +1004,7 @@ func (c *PlatGeoAPIClientImpl) GetAPIV1LayersByID(ctx context.Context, id string
 
 	u, err := url.Parse(c.baseURL + pathTemplate)
 	if err != nil {
-		return nil, LayerConfig{}, fmt.Errorf("invalid URL: %w", err)
+		return nil, LayerBody{}, fmt.Errorf("invalid URL: %w", err)
 	}
 
 	// Apply query parameters
@@ -940,7 +1016,7 @@ func (c *PlatGeoAPIClientImpl) GetAPIV1LayersByID(ctx context.Context, id string
 	// Create request
 	req, err := http.NewRequestWithContext(ctx, "GET", u.String(), reqBody)
 	if err != nil {
-		return nil, LayerConfig{}, fmt.Errorf("failed to create request: %w", err)
+		return nil, LayerBody{}, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	// Set content type and apply custom headers
@@ -949,26 +1025,26 @@ func (c *PlatGeoAPIClientImpl) GetAPIV1LayersByID(ctx context.Context, id string
 	// Execute request
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, LayerConfig{}, fmt.Errorf("request failed: %w", err)
+		return nil, LayerBody{}, fmt.Errorf("request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
 	// Handle error responses
 	if resp.StatusCode >= 400 {
 		body, _ := io.ReadAll(resp.Body)
-		return resp, LayerConfig{}, fmt.Errorf("API error %d: %s", resp.StatusCode, string(body))
+		return resp, LayerBody{}, fmt.Errorf("API error %d: %s", resp.StatusCode, string(body))
 	}
 	// Parse response body
-	var result LayerConfig
+	var result LayerBody
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return resp, LayerConfig{}, fmt.Errorf("failed to decode response: %w", err)
+		return resp, LayerBody{}, fmt.Errorf("failed to decode response: %w", err)
 	}
 
 	return resp, result, nil
 }
 
 // PutAPIV1LayersByID calls the PUT /api/v1/layers/{id} endpoint
-func (c *PlatGeoAPIClientImpl) PutAPIV1LayersByID(ctx context.Context, id string, body LayerConfig, opts ...Option) (*http.Response, LayerConfig, error) {
+func (c *PlatGeoAPIClientImpl) PutAPIV1LayersByID(ctx context.Context, id string, body LayerConfig, opts ...Option) (*http.Response, LayerBody, error) {
 	// Apply options
 	reqOpts := &RequestOptions{}
 	for _, opt := range opts {
@@ -981,7 +1057,7 @@ func (c *PlatGeoAPIClientImpl) PutAPIV1LayersByID(ctx context.Context, id string
 
 	u, err := url.Parse(c.baseURL + pathTemplate)
 	if err != nil {
-		return nil, LayerConfig{}, fmt.Errorf("invalid URL: %w", err)
+		return nil, LayerBody{}, fmt.Errorf("invalid URL: %w", err)
 	}
 
 	// Apply query parameters
@@ -991,14 +1067,14 @@ func (c *PlatGeoAPIClientImpl) PutAPIV1LayersByID(ctx context.Context, id string
 	var reqBody io.Reader
 	jsonData, err := json.Marshal(body)
 	if err != nil {
-		return nil, LayerConfig{}, fmt.Errorf("failed to marshal request body: %w", err)
+		return nil, LayerBody{}, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 	reqBody = bytes.NewReader(jsonData)
 
 	// Create request
 	req, err := http.NewRequestWithContext(ctx, "PUT", u.String(), reqBody)
 	if err != nil {
-		return nil, LayerConfig{}, fmt.Errorf("failed to create request: %w", err)
+		return nil, LayerBody{}, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	// Set content type and apply custom headers
@@ -1010,19 +1086,19 @@ func (c *PlatGeoAPIClientImpl) PutAPIV1LayersByID(ctx context.Context, id string
 	// Execute request
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, LayerConfig{}, fmt.Errorf("request failed: %w", err)
+		return nil, LayerBody{}, fmt.Errorf("request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
 	// Handle error responses
 	if resp.StatusCode >= 400 {
 		body, _ := io.ReadAll(resp.Body)
-		return resp, LayerConfig{}, fmt.Errorf("API error %d: %s", resp.StatusCode, string(body))
+		return resp, LayerBody{}, fmt.Errorf("API error %d: %s", resp.StatusCode, string(body))
 	}
 	// Parse response body
-	var result LayerConfig
+	var result LayerBody
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return resp, LayerConfig{}, fmt.Errorf("failed to decode response: %w", err)
+		return resp, LayerBody{}, fmt.Errorf("failed to decode response: %w", err)
 	}
 
 	return resp, result, nil
@@ -1082,7 +1158,7 @@ func (c *PlatGeoAPIClientImpl) DeleteAPIV1LayersByID(ctx context.Context, id str
 }
 
 // PatchAPIV1LayersByID calls the PATCH /api/v1/layers/{id} endpoint
-func (c *PlatGeoAPIClientImpl) PatchAPIV1LayersByID(ctx context.Context, id string, opts ...Option) (*http.Response, LayerConfig, error) {
+func (c *PlatGeoAPIClientImpl) PatchAPIV1LayersByID(ctx context.Context, id string, opts ...Option) (*http.Response, LayerBody, error) {
 	// Apply options
 	reqOpts := &RequestOptions{}
 	for _, opt := range opts {
@@ -1095,7 +1171,7 @@ func (c *PlatGeoAPIClientImpl) PatchAPIV1LayersByID(ctx context.Context, id stri
 
 	u, err := url.Parse(c.baseURL + pathTemplate)
 	if err != nil {
-		return nil, LayerConfig{}, fmt.Errorf("invalid URL: %w", err)
+		return nil, LayerBody{}, fmt.Errorf("invalid URL: %w", err)
 	}
 
 	// Apply query parameters
@@ -1107,7 +1183,7 @@ func (c *PlatGeoAPIClientImpl) PatchAPIV1LayersByID(ctx context.Context, id stri
 	// Create request
 	req, err := http.NewRequestWithContext(ctx, "PATCH", u.String(), reqBody)
 	if err != nil {
-		return nil, LayerConfig{}, fmt.Errorf("failed to create request: %w", err)
+		return nil, LayerBody{}, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	// Set content type and apply custom headers
@@ -1116,19 +1192,354 @@ func (c *PlatGeoAPIClientImpl) PatchAPIV1LayersByID(ctx context.Context, id stri
 	// Execute request
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, LayerConfig{}, fmt.Errorf("request failed: %w", err)
+		return nil, LayerBody{}, fmt.Errorf("request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
 	// Handle error responses
 	if resp.StatusCode >= 400 {
 		body, _ := io.ReadAll(resp.Body)
-		return resp, LayerConfig{}, fmt.Errorf("API error %d: %s", resp.StatusCode, string(body))
+		return resp, LayerBody{}, fmt.Errorf("API error %d: %s", resp.StatusCode, string(body))
 	}
 	// Parse response body
-	var result LayerConfig
+	var result LayerBody
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return resp, LayerConfig{}, fmt.Errorf("failed to decode response: %w", err)
+		return resp, LayerBody{}, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return resp, result, nil
+}
+
+// PostAPIV1LayersByIDDuplicate calls the POST /api/v1/layers/{id}/duplicate endpoint
+func (c *PlatGeoAPIClientImpl) PostAPIV1LayersByIDDuplicate(ctx context.Context, id string, body DuplicateInput, opts ...Option) (*http.Response, CreatedLayerBody, error) {
+	// Apply options
+	reqOpts := &RequestOptions{}
+	for _, opt := range opts {
+		opt(reqOpts)
+	}
+
+	// Build URL with path parameters
+	pathTemplate := "/api/v1/layers/{id}/duplicate"
+	pathTemplate = strings.ReplaceAll(pathTemplate, "{id}", url.PathEscape(id))
+
+	u, err := url.Parse(c.baseURL + pathTemplate)
+	if err != nil {
+		return nil, CreatedLayerBody{}, fmt.Errorf("invalid URL: %w", err)
+	}
+
+	// Apply query parameters
+	reqOpts.applyQueryParams(u)
+
+	// Prepare request body
+	var reqBody io.Reader
+	jsonData, err := json.Marshal(body)
+	if err != nil {
+		return nil, CreatedLayerBody{}, fmt.Errorf("failed to marshal request body: %w", err)
+	}
+	reqBody = bytes.NewReader(jsonData)
+
+	// Create request
+	req, err := http.NewRequestWithContext(ctx, "POST", u.String(), reqBody)
+	if err != nil {
+		return nil, CreatedLayerBody{}, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// Set content type and apply custom headers
+	if reqBody != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+	reqOpts.applyHeaders(req)
+
+	// Execute request
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, CreatedLayerBody{}, fmt.Errorf("request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Handle error responses
+	if resp.StatusCode >= 400 {
+		body, _ := io.ReadAll(resp.Body)
+		return resp, CreatedLayerBody{}, fmt.Errorf("API error %d: %s", resp.StatusCode, string(body))
+	}
+	// Parse response body
+	var result CreatedLayerBody
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return resp, CreatedLayerBody{}, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return resp, result, nil
+}
+
+// PostAPIV1LayersByIDPublish calls the POST /api/v1/layers/{id}/publish endpoint
+func (c *PlatGeoAPIClientImpl) PostAPIV1LayersByIDPublish(ctx context.Context, id string, opts ...Option) (*http.Response, LayerBody, error) {
+	// Apply options
+	reqOpts := &RequestOptions{}
+	for _, opt := range opts {
+		opt(reqOpts)
+	}
+
+	// Build URL with path parameters
+	pathTemplate := "/api/v1/layers/{id}/publish"
+	pathTemplate = strings.ReplaceAll(pathTemplate, "{id}", url.PathEscape(id))
+
+	u, err := url.Parse(c.baseURL + pathTemplate)
+	if err != nil {
+		return nil, LayerBody{}, fmt.Errorf("invalid URL: %w", err)
+	}
+
+	// Apply query parameters
+	reqOpts.applyQueryParams(u)
+
+	// Prepare request body
+	var reqBody io.Reader
+
+	// Create request
+	req, err := http.NewRequestWithContext(ctx, "POST", u.String(), reqBody)
+	if err != nil {
+		return nil, LayerBody{}, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// Set content type and apply custom headers
+	reqOpts.applyHeaders(req)
+
+	// Execute request
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, LayerBody{}, fmt.Errorf("request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Handle error responses
+	if resp.StatusCode >= 400 {
+		body, _ := io.ReadAll(resp.Body)
+		return resp, LayerBody{}, fmt.Errorf("API error %d: %s", resp.StatusCode, string(body))
+	}
+	// Parse response body
+	var result LayerBody
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return resp, LayerBody{}, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return resp, result, nil
+}
+
+// ListAPIV1LayersByIDStyles calls the GET /api/v1/layers/{id}/styles endpoint
+func (c *PlatGeoAPIClientImpl) ListAPIV1LayersByIDStyles(ctx context.Context, id string, opts ...Option) (*http.Response, []Style, error) {
+	// Apply options
+	reqOpts := &RequestOptions{}
+	for _, opt := range opts {
+		opt(reqOpts)
+	}
+
+	// Build URL with path parameters
+	pathTemplate := "/api/v1/layers/{id}/styles"
+	pathTemplate = strings.ReplaceAll(pathTemplate, "{id}", url.PathEscape(id))
+
+	u, err := url.Parse(c.baseURL + pathTemplate)
+	if err != nil {
+		return nil, nil, fmt.Errorf("invalid URL: %w", err)
+	}
+
+	// Apply query parameters
+	reqOpts.applyQueryParams(u)
+
+	// Prepare request body
+	var reqBody io.Reader
+
+	// Create request
+	req, err := http.NewRequestWithContext(ctx, "GET", u.String(), reqBody)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// Set content type and apply custom headers
+	reqOpts.applyHeaders(req)
+
+	// Execute request
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, nil, fmt.Errorf("request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Handle error responses
+	if resp.StatusCode >= 400 {
+		body, _ := io.ReadAll(resp.Body)
+		return resp, nil, fmt.Errorf("API error %d: %s", resp.StatusCode, string(body))
+	}
+	// Parse response body
+	var result []Style
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return resp, nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return resp, result, nil
+}
+
+// PostAPIV1LayersByIDStyles calls the POST /api/v1/layers/{id}/styles endpoint
+func (c *PlatGeoAPIClientImpl) PostAPIV1LayersByIDStyles(ctx context.Context, id string, body Style, opts ...Option) (*http.Response, Style, error) {
+	// Apply options
+	reqOpts := &RequestOptions{}
+	for _, opt := range opts {
+		opt(reqOpts)
+	}
+
+	// Build URL with path parameters
+	pathTemplate := "/api/v1/layers/{id}/styles"
+	pathTemplate = strings.ReplaceAll(pathTemplate, "{id}", url.PathEscape(id))
+
+	u, err := url.Parse(c.baseURL + pathTemplate)
+	if err != nil {
+		return nil, Style{}, fmt.Errorf("invalid URL: %w", err)
+	}
+
+	// Apply query parameters
+	reqOpts.applyQueryParams(u)
+
+	// Prepare request body
+	var reqBody io.Reader
+	jsonData, err := json.Marshal(body)
+	if err != nil {
+		return nil, Style{}, fmt.Errorf("failed to marshal request body: %w", err)
+	}
+	reqBody = bytes.NewReader(jsonData)
+
+	// Create request
+	req, err := http.NewRequestWithContext(ctx, "POST", u.String(), reqBody)
+	if err != nil {
+		return nil, Style{}, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// Set content type and apply custom headers
+	if reqBody != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+	reqOpts.applyHeaders(req)
+
+	// Execute request
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, Style{}, fmt.Errorf("request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Handle error responses
+	if resp.StatusCode >= 400 {
+		body, _ := io.ReadAll(resp.Body)
+		return resp, Style{}, fmt.Errorf("API error %d: %s", resp.StatusCode, string(body))
+	}
+	// Parse response body
+	var result Style
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return resp, Style{}, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return resp, result, nil
+}
+
+// DeleteAPIV1LayersByIDStylesByStyleID calls the DELETE /api/v1/layers/{id}/styles/{styleId} endpoint
+func (c *PlatGeoAPIClientImpl) DeleteAPIV1LayersByIDStylesByStyleID(ctx context.Context, id string, styleID string, opts ...Option) (*http.Response, MessageBody, error) {
+	// Apply options
+	reqOpts := &RequestOptions{}
+	for _, opt := range opts {
+		opt(reqOpts)
+	}
+
+	// Build URL with path parameters
+	pathTemplate := "/api/v1/layers/{id}/styles/{styleId}"
+	pathTemplate = strings.ReplaceAll(pathTemplate, "{id}", url.PathEscape(id))
+	pathTemplate = strings.ReplaceAll(pathTemplate, "{styleId}", url.PathEscape(styleID))
+
+	u, err := url.Parse(c.baseURL + pathTemplate)
+	if err != nil {
+		return nil, MessageBody{}, fmt.Errorf("invalid URL: %w", err)
+	}
+
+	// Apply query parameters
+	reqOpts.applyQueryParams(u)
+
+	// Prepare request body
+	var reqBody io.Reader
+
+	// Create request
+	req, err := http.NewRequestWithContext(ctx, "DELETE", u.String(), reqBody)
+	if err != nil {
+		return nil, MessageBody{}, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// Set content type and apply custom headers
+	reqOpts.applyHeaders(req)
+
+	// Execute request
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, MessageBody{}, fmt.Errorf("request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Handle error responses
+	if resp.StatusCode >= 400 {
+		body, _ := io.ReadAll(resp.Body)
+		return resp, MessageBody{}, fmt.Errorf("API error %d: %s", resp.StatusCode, string(body))
+	}
+	// Parse response body
+	var result MessageBody
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return resp, MessageBody{}, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return resp, result, nil
+}
+
+// PostAPIV1LayersByIDUnpublish calls the POST /api/v1/layers/{id}/unpublish endpoint
+func (c *PlatGeoAPIClientImpl) PostAPIV1LayersByIDUnpublish(ctx context.Context, id string, opts ...Option) (*http.Response, LayerBody, error) {
+	// Apply options
+	reqOpts := &RequestOptions{}
+	for _, opt := range opts {
+		opt(reqOpts)
+	}
+
+	// Build URL with path parameters
+	pathTemplate := "/api/v1/layers/{id}/unpublish"
+	pathTemplate = strings.ReplaceAll(pathTemplate, "{id}", url.PathEscape(id))
+
+	u, err := url.Parse(c.baseURL + pathTemplate)
+	if err != nil {
+		return nil, LayerBody{}, fmt.Errorf("invalid URL: %w", err)
+	}
+
+	// Apply query parameters
+	reqOpts.applyQueryParams(u)
+
+	// Prepare request body
+	var reqBody io.Reader
+
+	// Create request
+	req, err := http.NewRequestWithContext(ctx, "POST", u.String(), reqBody)
+	if err != nil {
+		return nil, LayerBody{}, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// Set content type and apply custom headers
+	reqOpts.applyHeaders(req)
+
+	// Execute request
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, LayerBody{}, fmt.Errorf("request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Handle error responses
+	if resp.StatusCode >= 400 {
+		body, _ := io.ReadAll(resp.Body)
+		return resp, LayerBody{}, fmt.Errorf("API error %d: %s", resp.StatusCode, string(body))
+	}
+	// Parse response body
+	var result LayerBody
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return resp, LayerBody{}, fmt.Errorf("failed to decode response: %w", err)
 	}
 
 	return resp, result, nil
@@ -1194,8 +1605,8 @@ func (c *PlatGeoAPIClientImpl) PostAPIV1Query(ctx context.Context, body PostAPIV
 	return resp, result, nil
 }
 
-// ListAPIV1Sources calls the GET /api/v1/sources endpoint
-func (c *PlatGeoAPIClientImpl) ListAPIV1Sources(ctx context.Context, opts ...Option) (*http.Response, []SourceFile, error) {
+// GetAPIV1Sources calls the GET /api/v1/sources endpoint
+func (c *PlatGeoAPIClientImpl) GetAPIV1Sources(ctx context.Context, opts ...Option) (*http.Response, PageBodySourceFile, error) {
 	// Apply options
 	reqOpts := &RequestOptions{}
 	for _, opt := range opts {
@@ -1207,7 +1618,7 @@ func (c *PlatGeoAPIClientImpl) ListAPIV1Sources(ctx context.Context, opts ...Opt
 
 	u, err := url.Parse(c.baseURL + pathTemplate)
 	if err != nil {
-		return nil, nil, fmt.Errorf("invalid URL: %w", err)
+		return nil, PageBodySourceFile{}, fmt.Errorf("invalid URL: %w", err)
 	}
 
 	// Apply query parameters
@@ -1219,7 +1630,7 @@ func (c *PlatGeoAPIClientImpl) ListAPIV1Sources(ctx context.Context, opts ...Opt
 	// Create request
 	req, err := http.NewRequestWithContext(ctx, "GET", u.String(), reqBody)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create request: %w", err)
+		return nil, PageBodySourceFile{}, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	// Set content type and apply custom headers
@@ -1228,19 +1639,19 @@ func (c *PlatGeoAPIClientImpl) ListAPIV1Sources(ctx context.Context, opts ...Opt
 	// Execute request
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, nil, fmt.Errorf("request failed: %w", err)
+		return nil, PageBodySourceFile{}, fmt.Errorf("request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
 	// Handle error responses
 	if resp.StatusCode >= 400 {
 		body, _ := io.ReadAll(resp.Body)
-		return resp, nil, fmt.Errorf("API error %d: %s", resp.StatusCode, string(body))
+		return resp, PageBodySourceFile{}, fmt.Errorf("API error %d: %s", resp.StatusCode, string(body))
 	}
 	// Parse response body
-	var result []SourceFile
+	var result PageBodySourceFile
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return resp, nil, fmt.Errorf("failed to decode response: %w", err)
+		return resp, PageBodySourceFile{}, fmt.Errorf("failed to decode response: %w", err)
 	}
 
 	return resp, result, nil
@@ -1298,8 +1709,8 @@ func (c *PlatGeoAPIClientImpl) GetAPIV1Tables(ctx context.Context, opts ...Optio
 	return resp, result, nil
 }
 
-// ListAPIV1Tiles calls the GET /api/v1/tiles endpoint
-func (c *PlatGeoAPIClientImpl) ListAPIV1Tiles(ctx context.Context, opts ...Option) (*http.Response, []TileFile, error) {
+// GetAPIV1Tiles calls the GET /api/v1/tiles endpoint
+func (c *PlatGeoAPIClientImpl) GetAPIV1Tiles(ctx context.Context, opts ...Option) (*http.Response, PageBodyTileFile, error) {
 	// Apply options
 	reqOpts := &RequestOptions{}
 	for _, opt := range opts {
@@ -1311,7 +1722,7 @@ func (c *PlatGeoAPIClientImpl) ListAPIV1Tiles(ctx context.Context, opts ...Optio
 
 	u, err := url.Parse(c.baseURL + pathTemplate)
 	if err != nil {
-		return nil, nil, fmt.Errorf("invalid URL: %w", err)
+		return nil, PageBodyTileFile{}, fmt.Errorf("invalid URL: %w", err)
 	}
 
 	// Apply query parameters
@@ -1323,7 +1734,7 @@ func (c *PlatGeoAPIClientImpl) ListAPIV1Tiles(ctx context.Context, opts ...Optio
 	// Create request
 	req, err := http.NewRequestWithContext(ctx, "GET", u.String(), reqBody)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create request: %w", err)
+		return nil, PageBodyTileFile{}, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	// Set content type and apply custom headers
@@ -1332,19 +1743,19 @@ func (c *PlatGeoAPIClientImpl) ListAPIV1Tiles(ctx context.Context, opts ...Optio
 	// Execute request
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, nil, fmt.Errorf("request failed: %w", err)
+		return nil, PageBodyTileFile{}, fmt.Errorf("request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
 	// Handle error responses
 	if resp.StatusCode >= 400 {
 		body, _ := io.ReadAll(resp.Body)
-		return resp, nil, fmt.Errorf("API error %d: %s", resp.StatusCode, string(body))
+		return resp, PageBodyTileFile{}, fmt.Errorf("API error %d: %s", resp.StatusCode, string(body))
 	}
 	// Parse response body
-	var result []TileFile
+	var result PageBodyTileFile
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return resp, nil, fmt.Errorf("failed to decode response: %w", err)
+		return resp, PageBodyTileFile{}, fmt.Errorf("failed to decode response: %w", err)
 	}
 
 	return resp, result, nil

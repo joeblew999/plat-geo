@@ -51,6 +51,23 @@ func (s *TileService) List() ([]TileFile, error) {
 	return files, nil
 }
 
+// ListPaged returns a page of tile files with total count.
+func (s *TileService) ListPaged(offset, limit int) ([]TileFile, int, error) {
+	all, err := s.List()
+	if err != nil {
+		return nil, 0, err
+	}
+	total := len(all)
+	if offset >= total {
+		return []TileFile{}, total, nil
+	}
+	end := offset + limit
+	if end > total {
+		end = total
+	}
+	return all[offset:end], total, nil
+}
+
 // TilesDir returns the path to the tiles directory.
 func (s *TileService) TilesDir() string {
 	return s.tilesDir

@@ -18,7 +18,7 @@ import (
 	"github.com/joeblew999/plat-geo/internal/api/editor"
 	"github.com/joeblew999/plat-geo/internal/db"
 	"github.com/joeblew999/plat-geo/internal/service"
-	"github.com/joeblew999/plat-geo/internal/templates"
+	"github.com/joeblew999/plat-geo/internal/humastar"
 )
 
 // Config holds the server configuration.
@@ -36,7 +36,7 @@ type Server struct {
 	humaAPI  huma.API
 	db       *sql.DB
 	services *api.Services
-	renderer *templates.Renderer
+	renderer *humastar.Renderer
 }
 
 // New creates a new geo server.
@@ -44,23 +44,14 @@ func New(cfg Config) *Server {
 	mux := http.NewServeMux()
 
 	humaConfig := huma.DefaultConfig("plat-geo API", "1.0.0")
+	humaConfig.DocsPath = "" // Custom docs handler below (Scalar + Stoplight)
 	humaConfig.Info.Description = "Geospatial data platform API for managing map layers, tiles, and sources."
 	humaConfig.Servers = []*huma.Server{
 		{URL: fmt.Sprintf("http://%s:%s", cfg.Host, cfg.Port), Description: "Local server"},
 	}
-	humaConfig.Transformers = append(humaConfig.Transformers, api.LinkTransformer())
+	humaConfig.Transformers = append(humaConfig.Transformers, humastar.LinkTransformer())
 
 	humaAPI := humago.New(mux, humaConfig)
-
-	// AutoConfig: restish auto-discovery via x-cli-config extension
-	// Enables: restish api configure <url>
-	humaAPI.OpenAPI().Extensions = map[string]any{
-		"x-cli-config": huma.AutoConfig{
-			Params: map[string]string{
-				"host": fmt.Sprintf("http://%s:%s", cfg.Host, cfg.Port),
-			},
-		},
-	}
 
 	// OpenAPI tags
 	humaAPI.OpenAPI().Tags = append(humaAPI.OpenAPI().Tags,
@@ -78,10 +69,10 @@ func New(cfg Config) *Server {
 		Source: service.NewSourceService(cfg.DataDir),
 	}
 
-	var renderer *templates.Renderer
+	var renderer *humastar.Renderer
 	if cfg.WebDir != "" {
 		fragmentsDir := filepath.Join(cfg.WebDir, "templates", "fragments")
-		if r, err := templates.New(fragmentsDir); err == nil {
+		if r, err := humastar.NewRenderer(fragmentsDir); err == nil {
 			renderer = r
 			log.Printf("Loaded fragment templates from %s", fragmentsDir)
 		}
@@ -104,6 +95,9 @@ func New(cfg Config) *Server {
 
 	// AutoPatch: auto-generate PATCH from GET+PUT (JSON Merge Patch, JSON Patch, Shorthand)
 	autopatch.AutoPatch(s.humaAPI)
+
+	// AutoLinks: auto-generate hypermedia Link headers from OpenAPI paths
+	humastar.AutoLinks(s.humaAPI)
 
 	// humaclient: register for SDK generation
 	humaclient.Register(s.humaAPI)
@@ -140,12 +134,14 @@ func (s *Server) routes() {
 		layerHandler := editor.NewLayerHandler(s.services.Layer, s.renderer)
 		huma.AutoRegister(s.humaAPI, layerHandler)
 
-		tileHandler := editor.NewTileHandler(s.services.Tile, s.renderer)
-		tileHandler.SetTilerService(service.NewTilerService(s.config.DataDir))
+		tileHandler := editor.NewTileHandler(s.services.Tile, service.NewTilerService(s.config.DataDir), s.renderer)
 		huma.AutoRegister(s.humaAPI, tileHandler)
 
 		sourceHandler := editor.NewSourceHandler(s.services.Source, s.renderer)
 		huma.AutoRegister(s.humaAPI, sourceHandler)
+
+		eventHandler := editor.NewEventHandler(s.services.Layer, s.renderer)
+		huma.AutoRegister(s.humaAPI, eventHandler)
 	}
 
 	// Static files
@@ -158,10 +154,28 @@ func (s *Server) routes() {
 	}
 
 	// Pages
+	s.mux.HandleFunc("/docs", handleDocs)
 	s.mux.HandleFunc("/viewer", s.handleViewer)
 	s.mux.HandleFunc("/editor", s.handleEditor)
 	s.mux.HandleFunc("/editor-gen", s.handleEditorGen)
+	s.mux.HandleFunc("/explorer", s.handleExplorer)
 	s.mux.HandleFunc("/", s.handleRoot)
+}
+
+func handleDocs(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+	w.Write([]byte(`<!doctype html>
+<html>
+  <head>
+    <title>plat-geo API Reference</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+  </head>
+  <body>
+    <script id="api-reference" data-url="/openapi.json"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+  </body>
+</html>`))
 }
 
 func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
@@ -169,13 +183,10 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	w.Header().Add("Link", `</health>; rel="health"`)
-	w.Header().Add("Link", `</api/v1/info>; rel="info"`)
-	w.Header().Add("Link", `</api/v1/layers>; rel="layers"`)
-	w.Header().Add("Link", `</api/v1/sources>; rel="sources"`)
-	w.Header().Add("Link", `</api/v1/tiles>; rel="tiles"`)
-	w.Header().Add("Link", `</api/v1/tables>; rel="tables"`)
-	w.Header().Add("Link", `</openapi.json>; rel="describedby"; type="application/json"`)
+	// Use auto-generated links from the OpenAPI spec.
+	for _, link := range humastar.RootLinks() {
+		w.Header().Add("Link", link)
+	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{
 		"service": "plat-geo",
@@ -191,6 +202,11 @@ func (s *Server) handleViewer(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleEditor(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store, must-revalidate")
 	http.ServeFile(w, r, filepath.Join(s.config.WebDir, "templates", "editor.html"))
+}
+
+func (s *Server) handleExplorer(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "no-store, must-revalidate")
+	http.ServeFile(w, r, filepath.Join(s.config.WebDir, "templates", "explorer.html"))
 }
 
 func (s *Server) handleEditorGen(w http.ResponseWriter, r *http.Request) {

@@ -1,40 +1,26 @@
 # plat-geo
 
-Geospatial data platform with PMTiles and GeoParquet.
-
-## Architecture
-
-This project uses **Huma** (Go REST framework) + **Datastar** (reactive frontend) with code generation for type safety across the stack.
-
-**[Read the Architecture Docs →](docs/README.md)**
-
-- [Why Huma + Datastar?](docs/architecture.md) - How they work together
-- [Code Generation Phases](docs/codegen.md) - The 3-phase gen pipeline
-
-![Editor](docs/screenshots/editor.png)
-
-## Install
-
-```bash
-xplat pkg install plat-geo
-```
+Geospatial data platform with PMTiles, GeoParquet, and a fully hypermedia-driven REST API.
 
 ## Run
 
 ```bash
-geo serve
+air
 ```
 
-Open http://localhost:8086/editor
+Open http://localhost:8086
 
-## Development
+| URL | What |
+|-----|------|
+| `/editor` | Datastar reactive layer editor |
+| `/explorer` | HATEOAS hypermedia mesh explorer |
+| `/docs` | OpenAPI interactive docs |
+| `/health` | Entry point (follow the Link headers) |
 
-```bash
-xplat task dev
-```
+## Architecture
 
-## Screenshots
-
-![Editor](docs/screenshots/editor.png)
-![Viewer](docs/screenshots/viewer.png)
-![API Docs](docs/screenshots/api-docs.png)
+- **[Architecture Overview](docs/architecture.md)** — Huma + Datastar synergy
+- **[Hypermedia & HATEOAS](docs/hypermedia.md)** — RFC 8288 Link headers, state-dependent actions, the explorer mesh
+- **[Code Generation](docs/codegen.md)** — 3-phase gen pipeline
+- **[Huma Guide](docs/huma.md)** — REST API patterns
+- **[Datastar Guide](docs/datastar.md)** — Reactive frontend

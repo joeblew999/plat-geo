@@ -7,5 +7,6 @@
   "fill": "#00ff00",
   "stroke": "#009900",
   "opacity": 0.5,
-  "defaultVisible": true
+  "defaultVisible": true,
+  "published": false
 }

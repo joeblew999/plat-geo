@@ -26,17 +26,17 @@ tasks:
     env:
       RESTISH_CONFIG_DIR: .
     cmds:
-      - echo "--- health ---" && {{.BIN_DIR}}/restish geo health
-      - echo "--- info ---" && {{.BIN_DIR}}/restish geo get-info
+      - echo "--- health ---" && {{.BIN_DIR}}/restish geo get-health
+      - echo "--- info ---" && {{.BIN_DIR}}/restish geo get-api-v1-info
       - echo "--- links ---" && {{.BIN_DIR}}/restish links http://localhost:8086/
-      - echo "--- sources ---" && {{.BIN_DIR}}/restish geo list-sources -o table
-      - echo "--- tiles ---" && {{.BIN_DIR}}/restish geo list-tiles -o table
-      - echo "--- layers ---" && {{.BIN_DIR}}/restish geo list-layers
-      - echo "--- create layer ---" && {{.BIN_DIR}}/restish geo create-layer < testdata/layer-smoke.json
-      - echo "--- get layer ---" && {{.BIN_DIR}}/restish geo get-layer smoke-test
+      - echo "--- sources ---" && {{.BIN_DIR}}/restish geo get-api-v1-sources -f body.data -o table
+      - echo "--- tiles ---" && {{.BIN_DIR}}/restish geo get-api-v1-tiles -f body.data -o table
+      - echo "--- layers ---" && {{.BIN_DIR}}/restish geo get-api-v1-layers
+      - echo "--- create layer ---" && {{.BIN_DIR}}/restish geo post-api-v1-layers < testdata/layer-smoke.json
+      - echo "--- get layer ---" && {{.BIN_DIR}}/restish geo get-api-v1-layers-by-id smoke-test
       - echo "--- layer links ---" && {{.BIN_DIR}}/restish links http://localhost:8086/api/v1/layers/smoke-test
-      - echo "--- delete layer ---" && {{.BIN_DIR}}/restish geo delete-layer smoke-test
-      - echo "--- query ---" && echo '{"query":"SELECT 1 as ok"}' | {{.BIN_DIR}}/restish geo query
+      - echo "--- delete layer ---" && {{.BIN_DIR}}/restish geo delete-api-v1-layers-by-id smoke-test
+      - echo "--- query ---" && echo '{"query":"SELECT 1 as ok"}' | {{.BIN_DIR}}/restish geo post-api-v1-query
 
   test:client:
     desc: Run Go integration tests for geoclient

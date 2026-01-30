@@ -68,6 +68,23 @@ func (s *SourceService) List() ([]SourceFile, error) {
 	return files, nil
 }
 
+// ListPaged returns a page of source files with total count.
+func (s *SourceService) ListPaged(offset, limit int) ([]SourceFile, int, error) {
+	all, err := s.List()
+	if err != nil {
+		return nil, 0, err
+	}
+	total := len(all)
+	if offset >= total {
+		return []SourceFile{}, total, nil
+	}
+	end := offset + limit
+	if end > total {
+		end = total
+	}
+	return all[offset:end], total, nil
+}
+
 // SourcesDir returns the path to the sources directory.
 func (s *SourceService) SourcesDir() string {
 	return s.sourcesDir

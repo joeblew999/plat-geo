@@ -18,12 +18,12 @@ tasks:
     desc: Generate Datastar signal helpers + HTML form fragments
     sources:
       - internal/service/types.go
-      - cmd/gen/main.go
+      - cmd/humastargen/main.go
     generates:
       - internal/api/editor/signals_gen.go
       - web/templates/generated/layer-form-gen.html
     cmds:
-      - go run ./cmd/gen
+      - go run ./cmd/humastargen
 
   gen:client:
     desc: Generate Go client SDK via humaclient

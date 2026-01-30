@@ -1,28 +1,27 @@
 package editor
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 
 	"github.com/danielgtaylor/huma/v2"
 
+	"github.com/joeblew999/plat-geo/internal/humastar"
 	"github.com/joeblew999/plat-geo/internal/service"
-	"github.com/joeblew999/plat-geo/internal/templates"
 )
 
 type TileHandler struct {
+	humastar.Handler
 	tileService  *service.TileService
 	tilerService *service.TilerService
-	renderer     *templates.Renderer
 }
 
-func NewTileHandler(tileService *service.TileService, renderer *templates.Renderer) *TileHandler {
-	return &TileHandler{tileService: tileService, renderer: renderer}
-}
-
-func (h *TileHandler) SetTilerService(tilerService *service.TilerService) {
-	h.tilerService = tilerService
+func NewTileHandler(tileService *service.TileService, tilerService *service.TilerService, renderer *humastar.Renderer) *TileHandler {
+	return &TileHandler{
+		Handler:      humastar.Handler{Renderer: renderer},
+		tileService:  tileService,
+		tilerService: tilerService,
+	}
 }
 
 func (h *TileHandler) RegisterRoutes(api huma.API) {
@@ -31,7 +30,7 @@ func (h *TileHandler) RegisterRoutes(api huma.API) {
 	huma.Post(api, "/api/v1/editor/tiles/generate", h.Generate, huma.OperationTags("editor"))
 }
 
-func (h *TileHandler) Generate(ctx context.Context, input *SignalsInput) (*huma.StreamResponse, error) {
+func (h *TileHandler) Generate(ctx context.Context, input *humastar.SignalsInput) (*huma.StreamResponse, error) {
 	signals, err := input.MustParse()
 	if err != nil {
 		return nil, err
@@ -53,7 +52,7 @@ func (h *TileHandler) Generate(ctx context.Context, input *SignalsInput) (*huma.
 
 	return &huma.StreamResponse{
 		Body: func(humaCtx huma.Context) {
-			sse := NewSSE(humaCtx)
+			sse := humastar.NewSSE(humaCtx)
 
 			if h.tilerService == nil {
 				sse.Error("Tiler service not configured")
@@ -97,32 +96,26 @@ func (h *TileHandler) Generate(ctx context.Context, input *SignalsInput) (*huma.
 	}, nil
 }
 
-func (h *TileHandler) ListTiles(ctx context.Context, input *EmptyInput) (*huma.StreamResponse, error) {
-	return &huma.StreamResponse{
-		Body: func(humaCtx huma.Context) {
-			sse := NewSSE(humaCtx)
-			tiles, err := h.tileService.List()
-			if err != nil {
-				sse.Error("Failed to list tiles: " + err.Error())
-				return
-			}
-			sse.Patch(h.renderTileList(tiles), "#tile-list")
-		},
-	}, nil
+func (h *TileHandler) ListTiles(ctx context.Context, input *humastar.EmptyInput) (*huma.StreamResponse, error) {
+	return h.Stream(func(sse humastar.SSE) {
+		tiles, err := h.tileService.List()
+		if err != nil {
+			sse.Error("Failed to list tiles: " + err.Error())
+			return
+		}
+		sse.Patch(h.renderTileList(tiles), "#tile-list")
+	}), nil
 }
 
-func (h *TileHandler) ListTilesSelect(ctx context.Context, input *EmptyInput) (*huma.StreamResponse, error) {
-	return &huma.StreamResponse{
-		Body: func(humaCtx huma.Context) {
-			sse := NewSSE(humaCtx)
-			tiles, err := h.tileService.List()
-			if err != nil {
-				sse.Error("Failed to list tiles: " + err.Error())
-				return
-			}
-			sse.Patch(h.renderTileSelect(tiles), "#pmtiles-select")
-		},
-	}, nil
+func (h *TileHandler) ListTilesSelect(ctx context.Context, input *humastar.EmptyInput) (*huma.StreamResponse, error) {
+	return h.Stream(func(sse humastar.SSE) {
+		tiles, err := h.tileService.List()
+		if err != nil {
+			sse.Error("Failed to list tiles: " + err.Error())
+			return
+		}
+		sse.Patch(h.renderTileSelect(tiles), "#pmtiles-select")
+	}), nil
 }
 
 type TileCardData struct {
@@ -131,26 +124,17 @@ type TileCardData struct {
 }
 
 func (h *TileHandler) renderTileList(tiles []service.TileFile) string {
-	var buf bytes.Buffer
-	if len(tiles) == 0 {
-		h.renderer.RenderToBuffer(&buf, "empty-state", map[string]string{
-			"Title": "No PMTiles Found", "Message": "Upload GeoJSON files and generate tiles, or add .pmtiles files to .data/tiles/",
-		})
-	} else {
-		for _, t := range tiles {
-			h.renderer.RenderToBuffer(&buf, "tile-card", TileCardData{Name: t.Name, Size: t.Size})
-		}
+	items := make([]any, len(tiles))
+	for i, t := range tiles {
+		items[i] = TileCardData{Name: t.Name, Size: t.Size}
 	}
-	return buf.String()
+	return h.RenderList("tile-card", items, "No PMTiles Found", "Upload GeoJSON files and generate tiles, or add .pmtiles files to .data/tiles/")
 }
 
 func (h *TileHandler) renderTileSelect(tiles []service.TileFile) string {
-	var buf bytes.Buffer
-	h.renderer.RenderToBuffer(&buf, "select-option", SelectOptionData{Label: "-- Select a PMTiles file --"})
-	for _, t := range tiles {
-		h.renderer.RenderToBuffer(&buf, "select-option", SelectOptionData{
-			Value: t.Name, Label: t.Name + " (" + t.Size + ")",
-		})
+	opts := make([]humastar.SelectOptionData, len(tiles))
+	for i, t := range tiles {
+		opts[i] = humastar.SelectOptionData{Value: t.Name, Label: t.Name + " (" + t.Size + ")"}
 	}
-	return buf.String()
+	return h.RenderSelect("-- Select a PMTiles file --", opts)
 }

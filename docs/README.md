@@ -7,6 +7,7 @@ This documentation explains the synergistic architecture combining **Huma** (Go 
 | Document | Description |
 |----------|-------------|
 | [Architecture Overview](./architecture.md) | How Huma + Datastar work together |
+| [Hypermedia & HATEOAS](./hypermedia.md) | RFC 8288 Link headers, state-dependent actions, explorer mesh |
 | [Huma Guide](./huma.md) | REST API patterns and SSE streaming |
 | [Datastar Guide](./datastar.md) | Frontend signals and DOM updates |
 | [Code Generation](./codegen.md) | The three phases of code generation |

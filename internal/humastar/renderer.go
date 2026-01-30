@@ -1,5 +1,4 @@
-// Package templates handles HTML template rendering for Datastar SSE responses.
-package templates
+package humastar
 
 import (
 	"bytes"
@@ -28,16 +27,16 @@ var funcMap = template.FuncMap{
 	},
 }
 
-// Renderer manages HTML fragment templates.
+// Renderer manages HTML fragment templates for Datastar SSE responses.
 type Renderer struct {
 	templates *template.Template
 	mu        sync.RWMutex
 }
 
-// New creates a new template renderer.
+// NewRenderer creates a new template renderer.
 // fragmentsDir should be the path to web/templates/fragments/
 // It also loads generated templates from the sibling generated/ directory.
-func New(fragmentsDir string) (*Renderer, error) {
+func NewRenderer(fragmentsDir string) (*Renderer, error) {
 	tmpl, err := parseTemplates(fragmentsDir)
 	if err != nil {
 		return nil, err
@@ -66,7 +65,6 @@ func (r *Renderer) RenderToBuffer(buf *bytes.Buffer, name string, data any) erro
 }
 
 // MustRender renders a template and panics on error.
-// Use only when you're certain the template exists.
 func (r *Renderer) MustRender(name string, data any) string {
 	s, err := r.Render(name, data)
 	if err != nil {
@@ -82,21 +80,17 @@ func (r *Renderer) RenderPage(pagePath string, data any) (string, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	// Build a text/template that includes all fragment definitions
 	tmpl := texttemplate.New("").Funcs(texttemplate.FuncMap(funcMap))
 
-	// Re-parse fragment sources into a text/template so {{template "layer-form"}} works
 	for _, t := range r.templates.Templates() {
 		if t.Name() == "" {
 			continue
 		}
-		// Clone each defined fragment by re-parsing its tree
 		if _, err := tmpl.AddParseTree(t.Name(), t.Tree); err != nil {
 			return "", err
 		}
 	}
 
-	// Parse the page template
 	if _, err := tmpl.ParseFiles(pagePath); err != nil {
 		return "", err
 	}
@@ -127,17 +121,14 @@ func (r *Renderer) Reload(fragmentsDir string) error {
 func parseTemplates(fragmentsDir string) (*template.Template, error) {
 	tmpl := template.New("").Funcs(funcMap)
 
-	// Hand-written fragments
 	pattern := filepath.Join(fragmentsDir, "*.html")
 	tmpl, err := tmpl.ParseGlob(pattern)
 	if err != nil {
 		return nil, err
 	}
 
-	// Generated templates (sibling directory)
 	genDir := filepath.Join(filepath.Dir(fragmentsDir), "generated")
 	genPattern := filepath.Join(genDir, "*.html")
-	// Ignore error — generated dir may not exist yet
 	tmpl, _ = tmpl.ParseGlob(genPattern)
 
 	return tmpl, nil

@@ -33,6 +33,30 @@
         ],
         "type": "object"
       },
+      "DuplicateInput": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "http://0.0.0.0:8086/schemas/DuplicateInput.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "name": {
+            "description": "Name for the duplicate layer",
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
       "ErrorDetail": {
         "additionalProperties": false,
         "properties": {
@@ -228,6 +252,142 @@
         ],
         "type": "object"
       },
+      "LayerBody": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "http://0.0.0.0:8086/schemas/LayerBody.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "defaultVisible": {
+            "default": true,
+            "description": "Whether layer is visible by default",
+            "examples": [
+              true
+            ],
+            "type": "boolean"
+          },
+          "file": {
+            "description": "Source file name",
+            "examples": [
+              "buildings.pmtiles"
+            ],
+            "type": "string"
+          },
+          "fill": {
+            "default": "#3388ff",
+            "description": "Fill color (CSS)",
+            "examples": [
+              "#3388ff"
+            ],
+            "type": "string"
+          },
+          "geomType": {
+            "default": "polygon",
+            "description": "Geometry type",
+            "enum": [
+              "polygon",
+              "line",
+              "point"
+            ],
+            "examples": [
+              "polygon"
+            ],
+            "type": "string"
+          },
+          "id": {
+            "description": "Unique layer identifier",
+            "examples": [
+              "buildings"
+            ],
+            "type": "string"
+          },
+          "legend": {
+            "description": "Legend entries for this layer",
+            "items": {
+              "$ref": "#/components/schemas/LegendItem"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "name": {
+            "description": "Display name",
+            "examples": [
+              "Buildings"
+            ],
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          },
+          "opacity": {
+            "default": 0.7,
+            "description": "Layer opacity (0-1)",
+            "examples": [
+              0.7
+            ],
+            "format": "double",
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "pmtilesLayer": {
+            "default": "default",
+            "description": "Layer name within PMTiles",
+            "examples": [
+              "buildings"
+            ],
+            "type": "string"
+          },
+          "published": {
+            "default": false,
+            "description": "Whether layer is published",
+            "type": "boolean"
+          },
+          "renderRules": {
+            "description": "Conditional styling rules",
+            "items": {
+              "$ref": "#/components/schemas/RenderRule"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "stroke": {
+            "default": "#2266cc",
+            "description": "Stroke color (CSS)",
+            "examples": [
+              "#2266cc"
+            ],
+            "type": "string"
+          },
+          "styles": {
+            "description": "Named style variants",
+            "items": {
+              "$ref": "#/components/schemas/Style"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "file",
+          "geomType",
+          "defaultVisible",
+          "published"
+        ],
+        "type": "object"
+      },
       "LayerConfig": {
         "additionalProperties": false,
         "properties": {
@@ -321,6 +481,11 @@
             ],
             "type": "string"
           },
+          "published": {
+            "default": false,
+            "description": "Whether layer is published",
+            "type": "boolean"
+          },
           "renderRules": {
             "description": "Conditional styling rules",
             "items": {
@@ -338,13 +503,24 @@
               "#2266cc"
             ],
             "type": "string"
+          },
+          "styles": {
+            "description": "Named style variants",
+            "items": {
+              "$ref": "#/components/schemas/Style"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
           }
         },
         "required": [
           "name",
           "file",
           "geomType",
-          "defaultVisible"
+          "defaultVisible",
+          "published"
         ],
         "type": "object"
       },
@@ -385,6 +561,98 @@
         },
         "required": [
           "message"
+        ],
+        "type": "object"
+      },
+      "PageBodySourceFile": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "http://0.0.0.0:8086/schemas/PageBodySourceFile.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "data": {
+            "description": "Items",
+            "items": {
+              "$ref": "#/components/schemas/SourceFile"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "limit": {
+            "description": "Page size",
+            "format": "int64",
+            "type": "integer"
+          },
+          "offset": {
+            "description": "Current offset",
+            "format": "int64",
+            "type": "integer"
+          },
+          "total": {
+            "description": "Total number of items",
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "offset",
+          "limit",
+          "data"
+        ],
+        "type": "object"
+      },
+      "PageBodyTileFile": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "http://0.0.0.0:8086/schemas/PageBodyTileFile.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "data": {
+            "description": "Items",
+            "items": {
+              "$ref": "#/components/schemas/TileFile"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "limit": {
+            "description": "Page size",
+            "format": "int64",
+            "type": "integer"
+          },
+          "offset": {
+            "description": "Current offset",
+            "format": "int64",
+            "type": "integer"
+          },
+          "total": {
+            "description": "Total number of items",
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "offset",
+          "limit",
+          "data"
         ],
         "type": "object"
       },
@@ -528,6 +796,48 @@
         ],
         "type": "object"
       },
+      "Style": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "http://0.0.0.0:8086/schemas/Style.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "fill": {
+            "default": "#3388ff",
+            "description": "Fill color (CSS)",
+            "type": "string"
+          },
+          "name": {
+            "description": "Style name",
+            "maxLength": 50,
+            "minLength": 1,
+            "type": "string"
+          },
+          "opacity": {
+            "default": 0.7,
+            "description": "Opacity (0-1)",
+            "format": "double",
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "stroke": {
+            "default": "#2266cc",
+            "description": "Stroke color (CSS)",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
       "TablesBody": {
         "additionalProperties": false,
         "properties": {
@@ -589,6 +899,30 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/editor/events": {
+      "get": {
+        "operationId": "get-api-v1-editor-events",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Get API v1 editor events",
+        "tags": [
+          "editor"
+        ]
+      }
+    },
     "/api/v1/editor/layers": {
       "get": {
         "operationId": "get-api-v1-editor-layers",
@@ -702,30 +1036,6 @@
           }
         },
         "summary": "Get API v1 editor sources",
-        "tags": [
-          "editor"
-        ]
-      }
-    },
-    "/api/v1/editor/sources/list": {
-      "get": {
-        "operationId": "get-api-v1-editor-sources-list",
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "default": {
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorModel"
-                }
-              }
-            },
-            "description": "Error"
-          }
-        },
-        "summary": "Get API v1 editor sources list",
         "tags": [
           "editor"
         ]
@@ -933,7 +1243,25 @@
                 }
               }
             },
-            "description": "OK"
+            "description": "OK",
+            "links": {
+              "describedby": {
+                "description": "Related: describedby",
+                "operationRef": "/openapi.json#/components/schemas/InfoBody"
+              },
+              "health": {
+                "description": "Related: health",
+                "operationRef": "/health"
+              },
+              "search": {
+                "description": "Related: search",
+                "operationRef": "/api/v1/query"
+              },
+              "up": {
+                "description": "Related: up",
+                "operationRef": "/health"
+              }
+            }
           },
           "default": {
             "content": {
@@ -967,7 +1295,25 @@
                 }
               }
             },
-            "description": "OK"
+            "description": "OK",
+            "links": {
+              "create-form": {
+                "description": "Related: create-form",
+                "operationRef": "/api/v1/layers"
+              },
+              "item": {
+                "description": "Related: item",
+                "operationRef": "/api/v1/layers/{id}"
+              },
+              "search": {
+                "description": "Related: search",
+                "operationRef": "/api/v1/query"
+              },
+              "up": {
+                "description": "Related: up",
+                "operationRef": "/health"
+              }
+            }
           },
           "default": {
             "content": {
@@ -1006,7 +1352,25 @@
                 }
               }
             },
-            "description": "OK"
+            "description": "OK",
+            "links": {
+              "create-form": {
+                "description": "Related: create-form",
+                "operationRef": "/api/v1/layers"
+              },
+              "item": {
+                "description": "Related: item",
+                "operationRef": "/api/v1/layers/{id}"
+              },
+              "search": {
+                "description": "Related: search",
+                "operationRef": "/api/v1/query"
+              },
+              "up": {
+                "description": "Related: up",
+                "operationRef": "/health"
+              }
+            }
           },
           "default": {
             "content": {
@@ -1053,7 +1417,29 @@
                 }
               }
             },
-            "description": "OK"
+            "description": "OK",
+            "links": {
+              "collection": {
+                "description": "Related: collection",
+                "operationRef": "/api/v1/layers"
+              },
+              "describedby": {
+                "description": "Related: describedby",
+                "operationRef": "/openapi.json#/components/schemas/LayerBody"
+              },
+              "edit": {
+                "description": "Related: edit",
+                "operationRef": "/api/v1/layers/{id}"
+              },
+              "edit-form": {
+                "description": "Related: edit-form",
+                "operationRef": "/api/v1/layers/{id}"
+              },
+              "up": {
+                "description": "Related: up",
+                "operationRef": "/api/v1/layers"
+              }
+            }
           },
           "default": {
             "content": {
@@ -1094,11 +1480,33 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/LayerConfig"
+                  "$ref": "#/components/schemas/LayerBody"
                 }
               }
             },
-            "description": "OK"
+            "description": "OK",
+            "links": {
+              "collection": {
+                "description": "Related: collection",
+                "operationRef": "/api/v1/layers"
+              },
+              "describedby": {
+                "description": "Related: describedby",
+                "operationRef": "/openapi.json#/components/schemas/LayerBody"
+              },
+              "edit": {
+                "description": "Related: edit",
+                "operationRef": "/api/v1/layers/{id}"
+              },
+              "edit-form": {
+                "description": "Related: edit-form",
+                "operationRef": "/api/v1/layers/{id}"
+              },
+              "up": {
+                "description": "Related: up",
+                "operationRef": "/api/v1/layers"
+              }
+            }
           },
           "default": {
             "content": {
@@ -1237,6 +1645,11 @@
                     ],
                     "type": "string"
                   },
+                  "published": {
+                    "default": false,
+                    "description": "Whether layer is published",
+                    "type": "boolean"
+                  },
                   "renderRules": {
                     "description": "Conditional styling rules",
                     "items": {},
@@ -1249,6 +1662,11 @@
                       "#2266cc"
                     ],
                     "type": "string"
+                  },
+                  "styles": {
+                    "description": "Named style variants",
+                    "items": {},
+                    "type": "array"
                   }
                 },
                 "type": "object"
@@ -1343,6 +1761,11 @@
                     ],
                     "type": "string"
                   },
+                  "published": {
+                    "default": false,
+                    "description": "Whether layer is published",
+                    "type": "boolean"
+                  },
                   "renderRules": {
                     "description": "Conditional styling rules",
                     "items": {},
@@ -1355,6 +1778,11 @@
                       "#2266cc"
                     ],
                     "type": "string"
+                  },
+                  "styles": {
+                    "description": "Named style variants",
+                    "items": {},
+                    "type": "array"
                   }
                 },
                 "type": "object"
@@ -1368,11 +1796,33 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/LayerConfig"
+                  "$ref": "#/components/schemas/LayerBody"
                 }
               }
             },
-            "description": "OK"
+            "description": "OK",
+            "links": {
+              "collection": {
+                "description": "Related: collection",
+                "operationRef": "/api/v1/layers"
+              },
+              "describedby": {
+                "description": "Related: describedby",
+                "operationRef": "/openapi.json#/components/schemas/LayerBody"
+              },
+              "edit": {
+                "description": "Related: edit",
+                "operationRef": "/api/v1/layers/{id}"
+              },
+              "edit-form": {
+                "description": "Related: edit-form",
+                "operationRef": "/api/v1/layers/{id}"
+              },
+              "up": {
+                "description": "Related: up",
+                "operationRef": "/api/v1/layers"
+              }
+            }
           },
           "default": {
             "content": {
@@ -1423,11 +1873,33 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/LayerConfig"
+                  "$ref": "#/components/schemas/LayerBody"
                 }
               }
             },
-            "description": "OK"
+            "description": "OK",
+            "links": {
+              "collection": {
+                "description": "Related: collection",
+                "operationRef": "/api/v1/layers"
+              },
+              "describedby": {
+                "description": "Related: describedby",
+                "operationRef": "/openapi.json#/components/schemas/LayerBody"
+              },
+              "edit": {
+                "description": "Related: edit",
+                "operationRef": "/api/v1/layers/{id}"
+              },
+              "edit-form": {
+                "description": "Related: edit-form",
+                "operationRef": "/api/v1/layers/{id}"
+              },
+              "up": {
+                "description": "Related: up",
+                "operationRef": "/api/v1/layers"
+              }
+            }
           },
           "default": {
             "content": {
@@ -1441,6 +1913,378 @@
           }
         },
         "summary": "Put API v1 layers by ID",
+        "tags": [
+          "layers"
+        ]
+      }
+    },
+    "/api/v1/layers/{id}/duplicate": {
+      "post": {
+        "operationId": "post-api-v1-layers-by-id-duplicate",
+        "parameters": [
+          {
+            "description": "Layer ID",
+            "example": "buildings",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Layer ID",
+              "examples": [
+                "buildings"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DuplicateInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedLayerBody"
+                }
+              }
+            },
+            "description": "OK",
+            "links": {
+              "collection": {
+                "description": "Related: collection",
+                "operationRef": "/api/v1/layers/{id}"
+              },
+              "up": {
+                "description": "Related: up",
+                "operationRef": "/api/v1/layers/{id}"
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Post API v1 layers by ID duplicate",
+        "tags": [
+          "layers"
+        ]
+      }
+    },
+    "/api/v1/layers/{id}/publish": {
+      "post": {
+        "operationId": "post-api-v1-layers-by-id-publish",
+        "parameters": [
+          {
+            "description": "Layer ID",
+            "example": "buildings",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Layer ID",
+              "examples": [
+                "buildings"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LayerBody"
+                }
+              }
+            },
+            "description": "OK",
+            "links": {
+              "collection": {
+                "description": "Related: collection",
+                "operationRef": "/api/v1/layers/{id}"
+              },
+              "up": {
+                "description": "Related: up",
+                "operationRef": "/api/v1/layers/{id}"
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Post API v1 layers by ID publish",
+        "tags": [
+          "layers"
+        ]
+      }
+    },
+    "/api/v1/layers/{id}/styles": {
+      "get": {
+        "operationId": "list-api-v1-layers-by-id-styles",
+        "parameters": [
+          {
+            "description": "Layer ID",
+            "example": "buildings",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Layer ID",
+              "examples": [
+                "buildings"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Style"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "description": "OK",
+            "links": {
+              "collection": {
+                "description": "Related: collection",
+                "operationRef": "/api/v1/layers/{id}"
+              },
+              "up": {
+                "description": "Related: up",
+                "operationRef": "/api/v1/layers/{id}"
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "List API v1 layers by ID styles",
+        "tags": [
+          "layers"
+        ]
+      },
+      "post": {
+        "operationId": "post-api-v1-layers-by-id-styles",
+        "parameters": [
+          {
+            "description": "Layer ID",
+            "example": "buildings",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Layer ID",
+              "examples": [
+                "buildings"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Style"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Style"
+                }
+              }
+            },
+            "description": "OK",
+            "links": {
+              "collection": {
+                "description": "Related: collection",
+                "operationRef": "/api/v1/layers/{id}"
+              },
+              "up": {
+                "description": "Related: up",
+                "operationRef": "/api/v1/layers/{id}"
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Post API v1 layers by ID styles",
+        "tags": [
+          "layers"
+        ]
+      }
+    },
+    "/api/v1/layers/{id}/styles/{styleId}": {
+      "delete": {
+        "operationId": "delete-api-v1-layers-by-id-styles-by-style-id",
+        "parameters": [
+          {
+            "description": "Layer ID",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Layer ID",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Style name",
+            "in": "path",
+            "name": "styleId",
+            "required": true,
+            "schema": {
+              "description": "Style name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageBody"
+                }
+              }
+            },
+            "description": "OK",
+            "links": {
+              "collection": {
+                "description": "Related: collection",
+                "operationRef": "/api/v1/layers/{id}/styles"
+              },
+              "up": {
+                "description": "Related: up",
+                "operationRef": "/api/v1/layers/{id}/styles"
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Delete API v1 layers by ID styles by style ID",
+        "tags": [
+          "layers"
+        ]
+      }
+    },
+    "/api/v1/layers/{id}/unpublish": {
+      "post": {
+        "operationId": "post-api-v1-layers-by-id-unpublish",
+        "parameters": [
+          {
+            "description": "Layer ID",
+            "example": "buildings",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Layer ID",
+              "examples": [
+                "buildings"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LayerBody"
+                }
+              }
+            },
+            "description": "OK",
+            "links": {
+              "collection": {
+                "description": "Related: collection",
+                "operationRef": "/api/v1/layers/{id}"
+              },
+              "up": {
+                "description": "Related: up",
+                "operationRef": "/api/v1/layers/{id}"
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Post API v1 layers by ID unpublish",
         "tags": [
           "layers"
         ]
@@ -1468,7 +2312,25 @@
                 }
               }
             },
-            "description": "OK"
+            "description": "OK",
+            "links": {
+              "create-form": {
+                "description": "Related: create-form",
+                "operationRef": "/api/v1/query"
+              },
+              "search": {
+                "description": "Related: search",
+                "operationRef": "/api/v1/query"
+              },
+              "tables": {
+                "description": "Related: tables",
+                "operationRef": "/api/v1/tables"
+              },
+              "up": {
+                "description": "Related: up",
+                "operationRef": "/health"
+              }
+            }
           },
           "default": {
             "content": {
@@ -1489,23 +2351,60 @@
     },
     "/api/v1/sources": {
       "get": {
-        "operationId": "list-api-v1-sources",
+        "operationId": "get-api-v1-sources",
+        "parameters": [
+          {
+            "description": "Items per page",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Items per page",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Items to skip",
+            "explode": false,
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "default": 0,
+              "description": "Items to skip",
+              "format": "int64",
+              "minimum": 0,
+              "type": "integer"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/SourceFile"
-                  },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "$ref": "#/components/schemas/PageBodySourceFile"
                 }
               }
             },
-            "description": "OK"
+            "description": "OK",
+            "links": {
+              "describedby": {
+                "description": "Related: describedby",
+                "operationRef": "/openapi.json#/components/schemas/PageBodySourceFile"
+              },
+              "search": {
+                "description": "Related: search",
+                "operationRef": "/api/v1/query"
+              },
+              "up": {
+                "description": "Related: up",
+                "operationRef": "/health"
+              }
+            }
           },
           "default": {
             "content": {
@@ -1518,7 +2417,7 @@
             "description": "Error"
           }
         },
-        "summary": "List API v1 sources",
+        "summary": "Get API v1 sources",
         "tags": [
           "sources"
         ]
@@ -1536,7 +2435,25 @@
                 }
               }
             },
-            "description": "OK"
+            "description": "OK",
+            "links": {
+              "describedby": {
+                "description": "Related: describedby",
+                "operationRef": "/openapi.json#/components/schemas/TablesBody"
+              },
+              "query": {
+                "description": "Related: query",
+                "operationRef": "/api/v1/query"
+              },
+              "search": {
+                "description": "Related: search",
+                "operationRef": "/api/v1/query"
+              },
+              "up": {
+                "description": "Related: up",
+                "operationRef": "/health"
+              }
+            }
           },
           "default": {
             "content": {
@@ -1557,23 +2474,60 @@
     },
     "/api/v1/tiles": {
       "get": {
-        "operationId": "list-api-v1-tiles",
+        "operationId": "get-api-v1-tiles",
+        "parameters": [
+          {
+            "description": "Items per page",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Items per page",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Items to skip",
+            "explode": false,
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "default": 0,
+              "description": "Items to skip",
+              "format": "int64",
+              "minimum": 0,
+              "type": "integer"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/TileFile"
-                  },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "$ref": "#/components/schemas/PageBodyTileFile"
                 }
               }
             },
-            "description": "OK"
+            "description": "OK",
+            "links": {
+              "describedby": {
+                "description": "Related: describedby",
+                "operationRef": "/openapi.json#/components/schemas/PageBodyTileFile"
+              },
+              "search": {
+                "description": "Related: search",
+                "operationRef": "/api/v1/query"
+              },
+              "up": {
+                "description": "Related: up",
+                "operationRef": "/health"
+              }
+            }
           },
           "default": {
             "content": {
@@ -1586,7 +2540,7 @@
             "description": "Error"
           }
         },
-        "summary": "List API v1 tiles",
+        "summary": "Get API v1 tiles",
         "tags": [
           "tiles"
         ]
@@ -1604,7 +2558,49 @@
                 }
               }
             },
-            "description": "OK"
+            "description": "OK",
+            "links": {
+              "describedby": {
+                "description": "Related: describedby",
+                "operationRef": "/openapi.json#/components/schemas/HealthBody"
+              },
+              "info": {
+                "description": "Related: info",
+                "operationRef": "/api/v1/info"
+              },
+              "layers": {
+                "description": "Related: layers",
+                "operationRef": "/api/v1/layers"
+              },
+              "query": {
+                "description": "Related: query",
+                "operationRef": "/api/v1/query"
+              },
+              "search": {
+                "description": "Related: search",
+                "operationRef": "/api/v1/query"
+              },
+              "service-desc": {
+                "description": "Related: service-desc",
+                "operationRef": "/openapi.json"
+              },
+              "service-doc": {
+                "description": "Related: service-doc",
+                "operationRef": "/docs"
+              },
+              "sources": {
+                "description": "Related: sources",
+                "operationRef": "/api/v1/sources"
+              },
+              "tables": {
+                "description": "Related: tables",
+                "operationRef": "/api/v1/tables"
+              },
+              "tiles": {
+                "description": "Related: tiles",
+                "operationRef": "/api/v1/tiles"
+              }
+            }
           },
           "default": {
             "content": {
@@ -1655,11 +2651,5 @@
       "description": "Editor SSE endpoints (Datastar)",
       "name": "editor"
     }
-  ],
-  "x-cli-config": {
-    "security": "",
-    "params": {
-      "host": "http://0.0.0.0:8086"
-    }
-  }
+  ]
 }

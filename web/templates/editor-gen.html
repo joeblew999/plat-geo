@@ -51,6 +51,8 @@
         </form>
     </div>
 
+    <div data-init="@get('/api/v1/editor/events')" style="display:none"></div>
+
     <h2>Layers</h2>
     <div id="layer-list" data-init="@get('/api/v1/editor/layers')">
         <div class="loading">Loading layers...</div>
