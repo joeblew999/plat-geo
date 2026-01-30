@@ -1,0 +1,11 @@
+.data
+.bin
+.git
+.tmp
+.task
+.playwright-mcp
+.src
+node_modules
+vendor
+humastargen
+apis.json
