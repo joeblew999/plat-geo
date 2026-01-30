@@ -89,6 +89,21 @@ Start at `/health` and follow the links.
 | `GET` | `/openapi.json` | OpenAPI 3.1 spec (with x-datastar extensions) |
 | `GET` | `/docs` | Interactive API docs (Scalar) |
 
+## Deploy
+
+Live: **https://plat-geo.fly.dev**
+
+```bash
+task deploy
+```
+
+Requires [Fly.io CLI](https://fly.io/docs/flyctl/install/). First-time setup:
+
+```bash
+fly launch          # create app + volume
+fly deploy          # build & deploy
+```
+
 ## Architecture
 
 - **[Architecture Overview](docs/architecture.md)** — Huma + Datastar synergy
