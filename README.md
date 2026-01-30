@@ -93,6 +93,16 @@ Start at `/health` and follow the links.
 
 Live: **https://plat-geo.fly.dev**
 
+| Page | Live URL |
+|------|----------|
+| Editor | https://plat-geo.fly.dev/editor |
+| Editor (Generated) | https://plat-geo.fly.dev/editor-gen |
+| Explorer | https://plat-geo.fly.dev/explorer |
+| Viewer | https://plat-geo.fly.dev/viewer |
+| API Docs | https://plat-geo.fly.dev/docs |
+| OpenAPI Spec | https://plat-geo.fly.dev/openapi.json |
+| Health | https://plat-geo.fly.dev/health |
+
 ```bash
 task deploy
 ```
