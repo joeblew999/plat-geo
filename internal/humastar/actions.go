@@ -1,3 +1,8 @@
+// actions.go — HATEOAS state-dependent actions via RFC 8288 Link headers.
+//
+// Resources implement the Actor interface to emit conditional action links
+// (e.g. "publish" only appears when unpublished, "delete" only when idle).
+// Each action becomes a Link header with method, title, and optional schema.
 package humastar
 
 import "fmt"

@@ -1,3 +1,7 @@
+// pagination.go — HATEOAS pagination via RFC 8288 Link headers.
+//
+// Response bodies implement the Pager interface to emit next/prev/first/last
+// Link headers. Huma middleware reads these and sets the headers automatically.
 package humastar
 
 import "fmt"

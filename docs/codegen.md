@@ -1,464 +1,125 @@
-# Code Generation Phases
+# Code Generation
 
-This project uses a multi-phase code generation strategy to maintain type safety across the stack. All generation is driven by Go struct definitions as the single source of truth.
+All generated code in this project comes from one source: **Go struct tags in `internal/service/types.go`**.
 
-## Overview
+Change a struct → `air` rebuilds → everything regenerates automatically.
+
+## Pipeline
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    Source of Truth                               │
-│                                                                  │
-│  internal/service/types.go                                      │
-│  ┌─────────────────────────────────────────────────────────┐   │
-│  │  type LayerConfig struct {                              │   │
-│  │      ID       string  `json:"id"`                       │   │
-│  │      Name     string  `json:"name" signal:"newlayer"`   │   │
-│  │      File     string  `json:"file" signal:"newlayer"`   │   │
-│  │      Opacity  float64 `json:"opacity" signal:"newlayer"`│   │
-│  │  }                                                      │   │
-│  └─────────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-          ┌───────────────────┼───────────────────┐
-          ▼                   ▼                   ▼
-    ┌──────────┐        ┌──────────┐        ┌──────────┐
-    │ Phase 1  │        │ Phase 2  │        │ Phase 3  │
-    │ Signals  │        │ OpenAPI  │        │ TypeScript│
-    │ (editor) │        │ (spec)   │        │ (JS/TS)  │
-    └────┬─────┘        └────┬─────┘        └────┬─────┘
-         │                   │                   │
-         ▼                   ▼                   ▼
-   signals_gen.go      openapi.json          api.ts
-   (Datastar forms)    (API docs)      (custom JS + clients)
+internal/service/types.go
+  │
+  ├─ humastargen     → internal/api/editor/signals_gen.go     Datastar signal parsers
+  │                   → web/templates/generated/layer-form-gen.html  Datastar form fragments
+  │
+  ├─ huma (runtime)  → openapi.json                           OpenAPI 3.1 spec
+  │
+  ├─ openapi-typescript → web/src/generated/api.ts            TypeScript types (frontend)
+  │
+  └─ humaclient      → pkg/geoclient/client.go                Go SDK (external consumers)
+                        typed methods + Follow() for HATEOAS link traversal
 ```
 
-## Phase 1: Signal Generation
+## How it runs
 
-**Purpose**: Generate type-safe parsers for Datastar signals
+```
+air → task build → task huma:gen → { gen:datastar, spec:json, ts, gen:client }
+```
 
-**Source**: `internal/gen/signals/main.go`
+Taskfile `sources`/`generates` fingerprinting means unchanged files are skipped. See `taskfiles/huma.yml` for the full pipeline definition.
 
-**Output**: `internal/api/editor/signals_gen.go`
+## What each step produces
 
-### What It Does
+### 1. Datastar signals + forms (`humastargen`)
 
-Reads Go structs and generates:
+**Tool**: `cmd/humastargen/main.go` — reads struct tags via `reflect`
 
-1. **Signal name constants** - Maps field names to signal names
-2. **Parse functions** - Converts JSON signals to typed structs
-3. **Reset functions** - Returns default values for form clearing
+**Output**:
+- `internal/api/editor/signals_gen.go` — `ParseLayerConfigSignals()`, `ResetLayerConfigSignals()`, signal name constants
+- `web/templates/generated/layer-form-gen.html` — HTML form with `data-bind` attributes matching signals
 
-### Example
-
-Given this struct:
+**Tags used**: `signal`, `input`, `sse`, `default`, `enum`, `required`, `minimum`, `maximum`, `doc`
 
 ```go
-// internal/service/types.go
-type LayerConfig struct {
-    ID       string  `json:"id"`
-    Name     string  `json:"name"`
-    File     string  `json:"file"`
-    GeomType string  `json:"geomType"`
-    Opacity  float64 `json:"opacity"`
-}
+// From types.go:
+Name string `json:"name" required:"true" minLength:"1" doc:"Display name"`
+
+// Generates in signals_gen.go:
+Name: s.String("newlayername"),
+
+// Generates in layer-form-gen.html:
+<label>Display name</label>
+<input type="text" data-bind:newlayername required>
 ```
 
-The generator produces:
+### 2. OpenAPI spec (`huma`)
+
+**Tool**: Huma framework — reads struct tags at server startup
+
+**Output**: `openapi.json`
+
+**Tags used**: `json`, `required`, `minLength`, `maxLength`, `minimum`, `maximum`, `enum`, `default`, `doc`, `example`
+
+The spec is extracted by running the server binary: `go run ./cmd/geo spec > openapi.json`
+
+### 3. TypeScript types (`openapi-typescript`)
+
+**Tool**: `bun x openapi-typescript` — reads `openapi.json`
+
+**Output**:
+- `web/src/generated/api.ts` — TypeScript interfaces for all endpoints, request/response schemas
+- `web/src/generated/client.ts` — type-safe fetch wrapper (hand-written, imports from `api.ts`)
+
+```ts
+import { api } from './generated/client';
+
+const { data } = await api.GET('/api/v1/layers');
+// data is fully typed — TypeScript knows the shape
+```
+
+### 4. Go client SDK (`humaclient`)
+
+**Tool**: `humaclient` library — reads OpenAPI spec from Huma API at codegen time
+
+**Output**: `pkg/geoclient/client.go` — 1900+ lines:
+- `PlatGeoAPIClient` interface with 29 typed methods
+- `Follow()` method for HATEOAS link traversal using RFC 8288 Link headers
+- `parseLinkHeader()` for extracting rel URLs from responses
+- Functional options: `WithHeader()`, `WithQuery()`, `WithBody()`
 
 ```go
-// internal/api/editor/signals_gen.go
-// Code generated by go run ./internal/gen/signals. DO NOT EDIT.
+import "github.com/joeblew999/plat-geo/pkg/geoclient"
 
-package editor
-
-import "github.com/joeblew999/plat-geo/internal/service"
-
-// LayerConfigSignalNames maps struct fields to signal names
-var LayerConfigSignalNames = struct {
-    Name     string
-    File     string
-    GeomType string
-    Opacity  string
-}{
-    Name:     "newlayername",
-    File:     "newlayerfile",
-    GeomType: "newlayergeomtype",
-    Opacity:  "newlayeropacity",
-}
-
-// ParseLayerConfigSignals converts Datastar signals to LayerConfig
-func ParseLayerConfigSignals(s Signals) service.LayerConfig {
-    return service.LayerConfig{
-        Name:     s.String("newlayername"),
-        File:     s.String("newlayerfile"),
-        GeomType: s.String("newlayergeomtype"),
-        Opacity:  s.Float("newlayeropacity"),
-    }
-}
-
-// ResetLayerConfigSignals returns default signal values for form reset
-func ResetLayerConfigSignals() map[string]any {
-    return map[string]any{
-        "newlayername":     "",
-        "newlayerfile":     "",
-        "newlayergeomtype": "polygon",
-        "newlayeropacity":  1.0,
-    }
-}
+c := geoclient.New("http://localhost:8086")
+_, layer, _ := c.GetLayer(ctx, "buildings")
+// layer is fully typed — Go knows the shape
 ```
 
-### Running Phase 1
+The SDK is committed to the repo so external Go services can `go get` it without running the server.
+
+## Commands
+
+| Command | What |
+|---------|------|
+| `task gen` | Run full pipeline (all 4 steps) |
+| `task huma:gen:datastar` | Signals + HTML forms only |
+| `task huma:spec:json` | OpenAPI spec only |
+| `task huma:ts` | TypeScript types only |
+| `task huma:gen:client` | Go SDK only |
+| `task dev` | Air hot reload (runs gen on every rebuild) |
+
+## Generated files
+
+All generated files have a `DO NOT EDIT` header. Grep for them:
 
 ```bash
-# Via Taskfile
-task gen:signals
-
-# Directly
-go run ./internal/gen/signals
+grep -r "DO NOT EDIT" --include="*.go" --include="*.ts" --include="*.html"
 ```
 
-### Signal Naming Convention
-
-The generator uses this pattern:
-- Prefix: `new` + lowercase struct name (e.g., `newlayer`)
-- Suffix: lowercase field name (e.g., `name`)
-- Result: `newlayername`
-
-This keeps signals predictable and collision-free.
-
-## Phase 2: OpenAPI Generation
-
-**Purpose**: Generate OpenAPI 3.1 spec from Huma routes
-
-**Source**: Huma framework (automatic)
-
-**Output**: `openapi.json` / `openapi.yaml`
-
-### What It Does
-
-Huma reads your route definitions and generates:
-
-1. **Paths** - All endpoints with methods
-2. **Schemas** - Request/response types from Go structs
-3. **Validation** - Constraints from struct tags
-4. **Documentation** - Descriptions from `doc:` tags
-
-### Example
-
-This Go code:
-
-```go
-type CreateLayerInput struct {
-    Body struct {
-        Name     string  `json:"name" minLength:"1" maxLength:"100" doc:"Layer name"`
-        Opacity  float64 `json:"opacity" minimum:"0" maximum:"1" default:"1" doc:"Layer opacity"`
-    }
-}
-
-huma.Post(api, "/api/v1/layers", createLayer)
-```
-
-Generates this OpenAPI:
-
-```yaml
-paths:
-  /api/v1/layers:
-    post:
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                  minLength: 1
-                  maxLength: 100
-                  description: Layer name
-                opacity:
-                  type: number
-                  minimum: 0
-                  maximum: 1
-                  default: 1
-                  description: Layer opacity
-```
-
-### Running Phase 2
-
-```bash
-# Via Taskfile
-task huma:spec
-
-# Via CLI
-go run ./cmd/geo spec --output openapi.json
-
-# YAML format
-go run ./cmd/geo spec --format yaml --output openapi.yaml
-```
-
-## Phase 3: TypeScript Generation
-
-**Purpose**: Generate TypeScript types for external API consumers
-
-**Source**: `openapi.json` (from Phase 2)
-
-**Output**: `web/src/generated/api.ts`, `web/src/generated/client.ts`
-
-### Who Uses This?
-
-1. **Custom JS alongside Datastar** - When you need logic beyond what directives handle
-2. **External API clients** - TypeScript apps consuming the REST API
-3. **Mobile apps** - React Native or other TS-based mobile clients
-4. **CLI tools** - Node.js scripts interacting with the API
-
-Datastar handles most UI interactions via directives (`@get()`, `@post()`, `data-bind`), but when you need custom JavaScript - complex validations, map integrations, charting libraries - the TypeScript types ensure type safety.
-
-### What It Does
-
-Uses `openapi-typescript` to generate:
-
-1. **Type definitions** - All request/response types
-2. **Path types** - Type-safe route definitions
-3. **Component schemas** - Reusable type definitions
-
-### Example
-
-From OpenAPI:
-
-```yaml
-components:
-  schemas:
-    LayerConfig:
-      type: object
-      properties:
-        id:
-          type: string
-        name:
-          type: string
-        opacity:
-          type: number
-```
-
-Generates TypeScript:
-
-```typescript
-// web/src/generated/api.ts
-export interface components {
-  schemas: {
-    LayerConfig: {
-      id?: string;
-      name?: string;
-      opacity?: number;
-    };
-  };
-}
-```
-
-### Running Phase 3
-
-```bash
-# Via Taskfile
-task huma:ts
-
-# Directly (requires openapi-typescript)
-npx openapi-typescript openapi.json -o web/src/generated/api.ts
-```
-
-### Usage Example (With Datastar)
-
-```typescript
-// Custom JS that works alongside Datastar directives
-import { api, LayerConfig } from './generated/client';
-
-// Fetch data and update Datastar signals programmatically
-async function loadLayerForMap(id: string) {
-  const { data } = await api.GET('/api/v1/layers/{id}', {
-    params: { path: { id } }
-  });
-
-  // Update Datastar signals from JS
-  if (data) {
-    window.ds.signals.currentLayer = data.name;
-    renderLayerOnMap(data);  // Custom map logic
-  }
-}
-```
-
-### Usage Example (External Client)
-
-```typescript
-// In a separate TypeScript project consuming this API
-import { api, LayerConfig } from './generated/client';
-
-// GET /api/v1/layers - fully typed response
-const { data, error } = await api.GET('/api/v1/layers');
-if (data) {
-  Object.entries(data).forEach(([id, layer]) => {
-    console.log(layer.name, layer.geomType);  // TypeScript knows the shape
-  });
-}
-
-// POST /api/v1/layers - request body is type-checked
-const { data: created } = await api.POST('/api/v1/layers', {
-  body: {
-    name: 'Buildings',
-    file: 'buildings.pmtiles',
-    geomType: 'polygon',  // TypeScript enforces: 'polygon' | 'line' | 'point'
-    defaultVisible: true,
-    opacity: 0.7,
-  }
-});
-```
-
-## Complete Generation Pipeline
-
-### All Phases
-
-```bash
-# Run all generation phases
-task gen
-```
-
-This runs:
-1. `task gen:signals` - Phase 1
-2. `task huma:spec` - Phase 2
-3. `task huma:ts` - Phase 3
-
-### Taskfile Configuration
-
-```yaml
-# Taskfile.yml
-tasks:
-  gen:
-    desc: Run all code generation
-    cmds:
-      - task: gen:signals
-      - task: huma:spec
-      - task: huma:ts
-
-  gen:signals:
-    desc: Generate signal parsers
-    sources:
-      - internal/service/types.go
-    generates:
-      - internal/api/editor/signals_gen.go
-    cmds:
-      - go run ./internal/gen/signals
-
-  huma:spec:
-    desc: Export OpenAPI spec
-    sources:
-      - internal/api/**/*.go
-    generates:
-      - openapi.json
-    cmds:
-      - go run ./cmd/geo spec --output openapi.json
-
-  huma:ts:
-    desc: Generate TypeScript types
-    sources:
-      - openapi.json
-    generates:
-      - web/src/generated/api.ts
-    cmds:
-      - npx openapi-typescript openapi.json -o web/src/generated/api.ts
-```
-
-## Development Workflow
-
-### Hot Reload with Generation
-
-```bash
-# Runs air with auto-regeneration
-task dev
-```
-
-Air configuration (`.air.toml`):
-```toml
-[build]
-  cmd = "task gen && go build -o ./tmp/main ./cmd/geo"
-  bin = "./tmp/main serve"
-  include_ext = ["go", "html"]
-```
-
-### Watch Mode
-
-```bash
-# Watch for changes and regenerate
-task huma:watch
-```
-
-## When to Regenerate
-
-| Change | Regenerate |
-|--------|------------|
-| Add/remove struct field | `task gen` (all phases) |
-| Change field type | `task gen` (all phases) |
-| Add new route | `task huma:spec` + `task huma:ts` |
-| Change validation tags | `task huma:spec` + `task huma:ts` |
-| Change signal prefix | `task gen:signals` |
-
-## Generator Source Code
-
-The signal generator is in [internal/gen/signals/main.go](../internal/gen/signals/main.go):
-
-```go
-package main
-
-import (
-    "os"
-    "text/template"
-)
-
-func main() {
-    // Read struct definitions (could use go/ast for real parsing)
-    // Generate signals_gen.go using template
-
-    tmpl := template.Must(template.New("signals").Parse(signalsTemplate))
-
-    f, _ := os.Create("internal/api/editor/signals_gen.go")
-    defer f.Close()
-
-    tmpl.Execute(f, templateData{
-        Package: "editor",
-        Structs: []structInfo{
-            {Name: "LayerConfig", Fields: layerFields},
-            // ... more structs
-        },
-    })
-}
-```
-
-## Best Practices
-
-1. **Never edit `*_gen.go` files** - They're overwritten on regeneration
-2. **Run `task gen` after struct changes** - Keep everything in sync
-3. **Commit generated files** - Makes CI builds faster
-4. **Use `task dev` for development** - Auto-regenerates on save
-5. **Check generated output** - Verify signal names match HTML bindings
-
-## Troubleshooting
-
-### Signal mismatch errors
-
-```
-Error: signal 'newlayername' not found
-```
-
-Fix: Run `task gen:signals` and verify HTML `data-bind` matches generated names.
-
-### OpenAPI spec outdated
-
-```
-TypeScript error: Property 'newField' does not exist
-```
-
-Fix: Run `task huma:spec && task huma:ts` to regenerate types.
-
-### Generator fails
-
-```
-Error: cannot find package "internal/service"
-```
-
-Fix: Run from project root directory, not from `internal/gen/signals/`.
+| File | Generator |
+|------|-----------|
+| `internal/api/editor/signals_gen.go` | `cmd/humastargen` |
+| `web/templates/generated/layer-form-gen.html` | `cmd/humastargen` |
+| `openapi.json` | `cmd/geo spec` |
+| `web/src/generated/api.ts` | `openapi-typescript` |
+| `pkg/geoclient/client.go` | `humaclient` |

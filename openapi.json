@@ -406,14 +406,18 @@
             "examples": [
               true
             ],
-            "type": "boolean"
+            "type": "boolean",
+            "x-signal": "visible"
           },
           "file": {
             "description": "Source file name",
             "examples": [
               "buildings.pmtiles"
             ],
-            "type": "string"
+            "type": "string",
+            "x-card": "meta",
+            "x-input": "sse",
+            "x-sse": "/api/v1/editor/tiles/select,pmtiles-select"
           },
           "fill": {
             "default": "#3388ff",
@@ -421,7 +425,8 @@
             "examples": [
               "#3388ff"
             ],
-            "type": "string"
+            "type": "string",
+            "x-input": "color"
           },
           "geomType": {
             "default": "polygon",
@@ -434,14 +439,16 @@
             "examples": [
               "polygon"
             ],
-            "type": "string"
+            "type": "string",
+            "x-card": "meta"
           },
           "id": {
             "description": "Unique layer identifier",
             "examples": [
               "buildings"
             ],
-            "type": "string"
+            "type": "string",
+            "x-card": "id"
           },
           "legend": {
             "description": "Legend entries for this layer",
@@ -460,7 +467,8 @@
             ],
             "maxLength": 100,
             "minLength": 1,
-            "type": "string"
+            "type": "string",
+            "x-card": "title"
           },
           "opacity": {
             "default": 0.7,
@@ -502,7 +510,8 @@
             "examples": [
               "#2266cc"
             ],
-            "type": "string"
+            "type": "string",
+            "x-input": "color"
           },
           "styles": {
             "description": "Named style variants",
@@ -522,7 +531,13 @@
           "defaultVisible",
           "published"
         ],
-        "type": "object"
+        "type": "object",
+        "x-datastar": {
+          "prefix": "newlayer",
+          "formTemplate": "layer-form",
+          "goPkg": "editor",
+          "goOut": "internal/api/editor/signals_gen.go"
+        }
       },
       "LegendItem": {
         "additionalProperties": false,

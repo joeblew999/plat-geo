@@ -14,6 +14,8 @@ import (
 	_ "github.com/danielgtaylor/huma/v2/formats/cbor"
 	"github.com/danielgtaylor/humaclient"
 
+	"reflect"
+
 	"github.com/joeblew999/plat-geo/internal/api"
 	"github.com/joeblew999/plat-geo/internal/api/editor"
 	"github.com/joeblew999/plat-geo/internal/db"
@@ -31,12 +33,13 @@ type Config struct {
 
 // Server is the geo HTTP server.
 type Server struct {
-	config   Config
-	mux      *http.ServeMux
-	humaAPI  huma.API
-	db       *sql.DB
-	services *api.Services
-	renderer *humastar.Renderer
+	config         Config
+	mux            *http.ServeMux
+	humaAPI        huma.API
+	db             *sql.DB
+	services       *api.Services
+	renderer       *humastar.Renderer
+	datastarSchemas []humastar.DatastarSchemaConfig
 }
 
 // New creates a new geo server.
@@ -96,6 +99,26 @@ func New(cfg Config) *Server {
 	// AutoPatch: auto-generate PATCH from GET+PUT (JSON Merge Patch, JSON Patch, Shorthand)
 	autopatch.AutoPatch(s.humaAPI)
 
+	// Datastar schema configs — used for x- extensions + signal codegen
+	s.datastarSchemas = []humastar.DatastarSchemaConfig{
+		{
+			Type:     reflect.TypeFor[service.LayerConfig](),
+			Prefix:   "newlayer",
+			FormTmpl: "layer-form",
+			BasePath: "/api/v1/editor/layers",
+			GoPkg:    "editor",
+			GoOut:    "internal/api/editor/signals_gen.go",
+		},
+	}
+
+	// Inject x-datastar, x-signal, x-input, x-sse extensions into OpenAPI schemas
+	humastar.InjectExtensions(s.humaAPI, s.datastarSchemas)
+
+	// Register runtime form templates from OpenAPI schemas (replaces static HTML codegen)
+	if renderer != nil {
+		humastar.RegisterFormTemplates(s.humaAPI, renderer)
+	}
+
 	// AutoLinks: auto-generate hypermedia Link headers from OpenAPI paths
 	humastar.AutoLinks(s.humaAPI)
 
@@ -115,6 +138,10 @@ func (s *Server) Close() error {
 
 func (s *Server) OpenAPI() any {
 	return s.humaAPI.OpenAPI()
+}
+
+func (s *Server) GenerateDatastar() error {
+	return humastar.GenerateSignals(s.humaAPI, s.datastarSchemas)
 }
 
 func (s *Server) GenerateClient(outputDir string) error {
@@ -215,15 +242,17 @@ func (s *Server) handleEditorGen(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "template renderer not initialized", http.StatusInternalServerError)
 		return
 	}
-	signals := editor.ResetLayerConfigSignals()
-	signals["_editingLayer"] = false
-	signals["error"] = ""
-	signals["success"] = ""
-	signalsJSON, _ := json.Marshal(signals)
+
+	// Build page data from OpenAPI spec — no hardcoded signal names or URLs
+	pageData := humastar.BuildPageData(s.humaAPI, s.datastarSchemas[0], map[string]any{
+		"_editingLayer": false,
+		"error":         "",
+		"success":       "",
+	})
 
 	html, err := s.renderer.RenderPage(
 		filepath.Join(s.config.WebDir, "templates", "editor-gen.html"),
-		map[string]any{"Signals": string(signalsJSON)},
+		pageData,
 	)
 	if err != nil {
 		http.Error(w, "template error: "+err.Error(), http.StatusInternalServerError)

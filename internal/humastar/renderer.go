@@ -1,3 +1,11 @@
+// renderer.go — HTML template management for Datastar SSE responses.
+//
+// Loads hand-written fragment templates (web/templates/fragments/*.html)
+// and provides Render/RenderPage methods for SSE handlers. Form templates
+// are added at runtime by RegisterFormTemplates (see formrender.go).
+//
+// Uses html/template for fragments (auto-escaped) and text/template for
+// full pages (no escaping of data-signals JSON attributes).
 package humastar
 
 import (
@@ -117,7 +125,8 @@ func (r *Renderer) Reload(fragmentsDir string) error {
 	return nil
 }
 
-// parseTemplates loads hand-written fragments and generated templates.
+// parseTemplates loads hand-written fragment templates.
+// Form templates are registered at runtime by RegisterFormTemplates.
 func parseTemplates(fragmentsDir string) (*template.Template, error) {
 	tmpl := template.New("").Funcs(funcMap)
 
@@ -126,10 +135,6 @@ func parseTemplates(fragmentsDir string) (*template.Template, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	genDir := filepath.Join(filepath.Dir(fragmentsDir), "generated")
-	genPattern := filepath.Join(genDir, "*.html")
-	tmpl, _ = tmpl.ParseGlob(genPattern)
 
 	return tmpl, nil
 }

@@ -40,8 +40,14 @@ tasks:
     cmds:
       - air
 
+  gen:
+    desc: "Run codegen: types.go → signals, openapi.json, TypeScript types, Go SDK"
+    aliases: [generate]
+    cmds:
+      - task: huma:gen
+
   build:
-    desc: Build the binary
+    desc: Build the binary (runs codegen first)
     deps: [huma:gen]
     cmds:
       - mkdir -p {{.BIN_DIR}}

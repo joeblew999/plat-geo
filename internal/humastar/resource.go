@@ -1,3 +1,8 @@
+// resource.go — Reusable action definitions and resource helpers.
+//
+// ActionDef is a URL pattern template for actions (e.g. "/api/v1/layers/%s").
+// ActionsFor generates concrete Action values from ActionDefs for a given
+// resource ID, connecting resource.go → actions.go → Link headers.
 package humastar
 
 import "fmt"

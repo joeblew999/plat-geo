@@ -1,5 +1,20 @@
 # Huma API: codegen, spec, TypeScript, client SDK
-# Usage: task huma:gen, task huma:spec, task huma:ts
+# Usage: task gen (or task huma:gen, task huma:spec, task huma:ts)
+#
+# Pipeline (triggered automatically: air → task build → huma:gen):
+#
+#   internal/service/types.go  (one struct, all tags)
+#     │
+#     ├─ gen:datastar  → internal/api/editor/signals_gen.go    (Datastar signal parsers)
+#     │
+#     ├─ spec:json     → openapi.json                          (OpenAPI 3.1 spec)
+#     │
+#     ├─ ts            → web/src/generated/api.ts              (TypeScript types for frontend)
+#     │
+#     └─ gen:client    → pkg/geoclient/client.go               (Go SDK for external consumers)
+#                        includes Follow() + parseLinkHeader() for HATEOAS link traversal
+#
+# Everything is derived from struct tags. Change types.go → air rebuilds → all 4 outputs regenerate.
 version: '3'
 
 vars:
@@ -8,6 +23,7 @@ vars:
 
 tasks:
   gen:
+    desc: "Run full codegen pipeline: struct tags → signals, spec, TypeScript types, Go SDK"
     cmds:
       - task: gen:datastar
       - task: spec:json
@@ -15,18 +31,18 @@ tasks:
       - task: gen:client
 
   gen:datastar:
-    desc: Generate Datastar signal helpers + HTML form fragments
+    desc: "Generate Datastar signal helpers → internal/api/editor/signals_gen.go"
     sources:
       - internal/service/types.go
-      - cmd/humastargen/main.go
+      - internal/humastar/gen.go
+      - internal/humastar/extensions.go
     generates:
       - internal/api/editor/signals_gen.go
-      - web/templates/generated/layer-form-gen.html
     cmds:
-      - go run ./cmd/humastargen
+      - go run ./cmd/geo gen-datastar
 
   gen:client:
-    desc: Generate Go client SDK via humaclient
+    desc: "Generate Go client SDK → pkg/geoclient/client.go"
     sources:
       - internal/api/**/*.go
       - internal/service/types.go
@@ -40,6 +56,7 @@ tasks:
       - go run ./cmd/geo spec
 
   spec:json:
+    desc: "Generate OpenAPI spec → openapi.json"
     sources:
       - 'internal/api/**/*.go'
       - 'internal/service/types.go'
@@ -55,6 +72,7 @@ tasks:
       - go run ./cmd/geo spec --yaml > {{.OPENAPI_YAML}}
 
   ts:
+    desc: "Generate TypeScript types → web/src/generated/api.ts"
     deps: [spec:json]
     cmds:
       - bun x openapi-typescript {{.OPENAPI_JSON}} -o web/src/generated/api.ts

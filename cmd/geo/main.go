@@ -92,6 +92,20 @@ func main() {
 	specCmd.Flags().BoolP("yaml", "y", false, "Output as YAML instead of JSON")
 	cli.Root().AddCommand(specCmd)
 
+	// gen-datastar subcommand: generate Datastar signal parsers from OpenAPI schemas
+	genDatastarCmd := &cobra.Command{
+		Use:   "gen-datastar",
+		Short: "Generate Datastar signal helpers from OpenAPI schemas",
+		Run: humacli.WithOptions(func(cmd *cobra.Command, args []string, opts *Options) {
+			srv := newServer(opts)
+			if err := srv.GenerateDatastar(); err != nil {
+				fmt.Fprintf(os.Stderr, "Error generating datastar: %v\n", err)
+				os.Exit(1)
+			}
+		}),
+	}
+	cli.Root().AddCommand(genDatastarCmd)
+
 	// gen-client subcommand: generate Go client SDK via humaclient
 	genClientCmd := &cobra.Command{
 		Use:   "gen-client",

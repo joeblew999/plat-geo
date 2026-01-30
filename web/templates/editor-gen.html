@@ -42,7 +42,7 @@
 
     <div class="card">
         <h2>New Layer</h2>
-        <form data-on:submit__prevent="@post('/api/v1/editor/layers')" data-init="@get('/api/v1/editor/tiles/select')">
+        <form data-on:submit__prevent="@post('{{.Routes.Create}}')" data-init="{{.DataInit}}">
             {{template "layer-form" .}}
             <div class="btn-actions">
                 <button type="submit" class="btn btn-primary">Create Layer</button>
@@ -51,10 +51,10 @@
         </form>
     </div>
 
-    <div data-init="@get('/api/v1/editor/events')" style="display:none"></div>
+    <div data-init="@get('{{.Routes.Events}}')" style="display:none"></div>
 
     <h2>Layers</h2>
-    <div id="layer-list" data-init="@get('/api/v1/editor/layers')">
+    <div id="layer-list" data-init="@get('{{.Routes.List}}')">
         <div class="loading">Loading layers...</div>
     </div>
 </body>

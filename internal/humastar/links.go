@@ -1,3 +1,12 @@
+// links.go — Auto-generated HATEOAS Link headers from OpenAPI paths.
+//
+// AutoLinks walks the OpenAPI spec after all routes are registered and
+// generates RFC 8288 Link headers for related resources. For every GET
+// endpoint, it discovers sibling operations (POST, PUT, DELETE, PATCH)
+// and emits Link headers with rel, method, and title attributes.
+//
+// This enables HATEOAS navigation: clients follow links instead of
+// constructing URLs. The generated Go SDK's Follow() method uses these.
 package humastar
 
 import (
