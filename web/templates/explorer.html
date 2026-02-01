@@ -7,19 +7,12 @@
     <link rel="stylesheet" href="/static/explorer.css">
 </head>
 <body>
-    <nav id="sidebar">
-        <h1>API Explorer</h1>
-        <div id="nav-collections" class="nav-section">
-            <div class="nav-label">Loading...</div>
-        </div>
-        <div class="nav-section">
-            <div class="nav-label">Discovery</div>
-            <a href="/docs" target="_blank">API Docs <span class="rel-badge">service-doc</span></a>
-            <a href="/openapi.json" target="_blank">OpenAPI Spec <span class="rel-badge">service-desc</span></a>
-        </div>
-    </nav>
-    <main id="content">
-        <div class="loading">Discovering API via HATEOAS links...</div>
+    <aside>
+        <div class="tree-header">API Explorer</div>
+        <div id="tree"></div>
+    </aside>
+    <main id="detail">
+        <div class="loading">Loading...</div>
     </main>
     <script src="/static/explorer.js"></script>
 </body>

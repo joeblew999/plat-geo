@@ -1,0 +1,14 @@
+{
+  "dc-landmarks": {
+    "id": "dc-landmarks",
+    "name": "DC Landmarks",
+    "file": "",
+    "pmtilesLayer": "",
+    "geomType": "point",
+    "defaultVisible": true,
+    "fill": "#e74c3c",
+    "stroke": "#c0392b",
+    "opacity": 0.8,
+    "published": true
+  }
+}

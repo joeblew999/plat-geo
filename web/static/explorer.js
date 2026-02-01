@@ -1,37 +1,6 @@
-// Explorer — HATEOAS API browser
-// Discovers and navigates RFC 8288 Link headers.
+// Explorer — Tree-based API browser
+// Discovers API resources via Link headers and presents them as a navigable tree.
 'use strict';
-
-// ---------------------------------------------------------------------------
-// Rel configuration — single source of truth for classification & rendering
-// ---------------------------------------------------------------------------
-const REL_CONFIG = {
-  self:           { category: 'meta' },
-  up:             { category: 'nav',    label: '\u2191 Up' },
-  collection:     { category: 'nav',    label: 'Back to List' },
-  'create-form':  { category: 'action', label: '+ Add New',  btnClass: 'btn-primary' },
-  'edit-form':    { category: 'action', label: 'Edit',       btnClass: 'btn-primary' },
-  edit:           { category: 'action', label: 'Edit',       btnClass: 'btn-primary' },
-  search:         { category: 'meta' },
-  describedby:    { category: 'meta' },
-  'service-desc': { category: 'meta' },
-  'service-doc':  { category: 'meta' },
-  first:          { category: 'page' },
-  prev:           { category: 'page' },
-  next:           { category: 'page' },
-  last:           { category: 'page' },
-};
-
-function relCategory(rel) {
-  return REL_CONFIG[rel]?.category ?? '';
-}
-
-function relCSSClass(rel) {
-  const cat = relCategory(rel);
-  if (cat === 'action') return 'action';
-  if (cat === 'meta')   return 'meta';
-  return '';
-}
 
 // ---------------------------------------------------------------------------
 // RFC 8288 Link header parser
@@ -94,7 +63,6 @@ function operationSchema(spec, path, method) {
   return ct.schema.$ref ? resolveRef(spec, ct.schema.$ref) : ct.schema;
 }
 
-/** Unified schema resolution: Link header schema URL → OpenAPI fallback. */
 async function resolveSchema(href, method, schemaUrl) {
   if (schemaUrl) {
     try {
@@ -108,35 +76,27 @@ async function resolveSchema(href, method, schemaUrl) {
 }
 
 // ---------------------------------------------------------------------------
-// DOM helpers — safe element creation
+// DOM helpers
 // ---------------------------------------------------------------------------
-
-/** Create an element. attrs is a plain object, children is string | Node[]. */
 function el(tag, attrs, children) {
   const e = document.createElement(tag);
   if (attrs) {
     for (const [k, v] of Object.entries(attrs)) {
-      if (k === 'class') { e.className = v; }
-      else if (k.startsWith('data-')) { e.setAttribute(k, v); }
-      else if (k === 'disabled') { e.disabled = !!v; }
-      else if (k === 'type') { e.type = v; }
-      else if (k === 'href') { e.href = v; }
-      else if (k === 'target') { e.target = v; }
-      else { e.setAttribute(k, v); }
+      if (k === 'class') e.className = v;
+      else if (k === 'disabled') e.disabled = !!v;
+      else if (k === 'type') e.type = v;
+      else if (k === 'href') e.href = v;
+      else if (k === 'target') e.target = v;
+      else e.setAttribute(k, v);
     }
   }
-  if (typeof children === 'string') {
-    e.textContent = children;
-  } else if (Array.isArray(children)) {
-    for (const c of children) if (c) e.appendChild(c);
-  }
+  if (typeof children === 'string') e.textContent = children;
+  else if (Array.isArray(children)) for (const c of children) if (c) e.appendChild(c);
   return e;
 }
 
-function text(s) { return document.createTextNode(s); }
-
 // ---------------------------------------------------------------------------
-// Schema-driven form generation
+// Schema-driven form helpers
 // ---------------------------------------------------------------------------
 function buildFormFields(schema, values, spec) {
   if (!schema?.properties) return [];
@@ -147,15 +107,10 @@ function buildFormFields(schema, values, spec) {
       if (prop.$ref && spec) prop = resolveRef(spec, prop.$ref) || prop;
       const val = values?.[name] ?? prop.default ?? '';
       const req = required.has(name);
-      const doc = prop.description || '';
-
       const group = el('div', { class: 'form-group' });
       const label = el('label');
       label.textContent = name;
-      if (req) {
-        const star = el('span', { class: 'req' }, ' *');
-        label.appendChild(star);
-      }
+      if (req) label.appendChild(el('span', { class: 'req' }, ' *'));
       group.appendChild(label);
 
       let input;
@@ -169,31 +124,21 @@ function buildFormFields(schema, values, spec) {
       } else if (prop.type === 'boolean') {
         input = el('input', { type: 'checkbox', name });
         if (val) input.checked = true;
-        // Wrap checkbox in label
-        const wrap = el('label');
-        wrap.appendChild(input);
-        wrap.appendChild(text(' ' + name));
-        group.innerHTML = '';
-        group.appendChild(wrap);
       } else if (prop.type === 'number' || prop.type === 'integer') {
-        const attrs = { type: 'number', name, value: String(val) };
-        if (prop.minimum != null) attrs.min = String(prop.minimum);
-        if (prop.maximum != null) attrs.max = String(prop.maximum);
-        attrs.step = prop.type === 'integer' ? '1' : 'any';
-        if (req) attrs.required = '';
-        input = el('input', attrs);
+        const a = { type: 'number', name, value: String(val) };
+        if (prop.minimum != null) a.min = String(prop.minimum);
+        if (prop.maximum != null) a.max = String(prop.maximum);
+        a.step = prop.type === 'integer' ? '1' : 'any';
+        if (req) a.required = '';
+        input = el('input', a);
       } else {
-        const isColor = (typeof val === 'string' && /^#[0-9a-fA-F]{6}$/.test(val)) ||
-                         /color|fill|stroke/i.test(name);
-        const attrs = { type: isColor ? 'color' : 'text', name, value: String(val) };
-        if (prop.minLength) attrs.minlength = String(prop.minLength);
-        if (prop.maxLength) attrs.maxlength = String(prop.maxLength);
-        if (req) attrs.required = '';
-        input = el('input', attrs);
+        const isColor = (typeof val === 'string' && /^#[0-9a-fA-F]{6}$/.test(val)) || /color|fill|stroke/i.test(name);
+        const a = { type: isColor ? 'color' : 'text', name, value: String(val) };
+        if (req) a.required = '';
+        input = el('input', a);
       }
-
       if (input) group.appendChild(input);
-      if (doc) group.appendChild(el('div', { class: 'hint' }, doc));
+      if (prop.description) group.appendChild(el('div', { class: 'hint' }, prop.description));
       return group;
     });
 }
@@ -204,24 +149,18 @@ function collectFormData(formEl, schema) {
   for (const [name, prop] of Object.entries(schema.properties)) {
     const input = formEl.querySelector(`[name="${name}"]`);
     if (!input) continue;
-    if (prop.type === 'boolean')      data[name] = input.checked;
-    else if (prop.type === 'number')  data[name] = parseFloat(input.value);
+    if (prop.type === 'boolean') data[name] = input.checked;
+    else if (prop.type === 'number') data[name] = parseFloat(input.value);
     else if (prop.type === 'integer') data[name] = parseInt(input.value, 10);
-    else if (input.value !== '')      data[name] = input.value;
+    else if (input.value !== '') data[name] = input.value;
   }
   return data;
 }
 
-// ---------------------------------------------------------------------------
-// Form modal
-// ---------------------------------------------------------------------------
 function showFormModal(title, schema, values, onSubmit) {
   const overlay = el('div', { class: 'form-overlay' });
   overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
-
   const panel = el('div', { class: 'form-panel' });
-
-  // Header
   const header = el('div', { class: 'panel-header' });
   header.appendChild(el('h2', null, title));
   const closeBtn = el('button', { class: 'btn btn-sm' }, '\u2715');
@@ -229,20 +168,16 @@ function showFormModal(title, schema, values, onSubmit) {
   header.appendChild(closeBtn);
   panel.appendChild(header);
 
-  // Body
   const body = el('div', { class: 'panel-body' });
   const form = el('form');
-  for (const field of buildFormFields(schema, values, _specCache)) {
-    form.appendChild(field);
-  }
-  const formActions = el('div', { class: 'form-actions' });
+  for (const field of buildFormFields(schema, values, _specCache)) form.appendChild(field);
+  const actions = el('div', { class: 'form-actions' });
   const cancelBtn = el('button', { type: 'button', class: 'btn btn-sm' }, 'Cancel');
   cancelBtn.addEventListener('click', () => overlay.remove());
-  formActions.appendChild(cancelBtn);
-  formActions.appendChild(el('button', { type: 'submit', class: 'btn btn-primary btn-sm' }, 'Save'));
-  form.appendChild(formActions);
+  actions.appendChild(cancelBtn);
+  actions.appendChild(el('button', { type: 'submit', class: 'btn btn-primary btn-sm' }, 'Save'));
+  form.appendChild(actions);
   body.appendChild(form);
-
   const errEl = el('div', { class: 'error' });
   errEl.style.display = 'none';
   body.appendChild(errEl);
@@ -264,67 +199,131 @@ function showFormModal(title, schema, values, onSubmit) {
 }
 
 // ---------------------------------------------------------------------------
+// Tree node types
+// ---------------------------------------------------------------------------
+const COLLECTIONS = [
+  { label: 'Layers',  rel: 'layers',  href: '/api/v1/layers',  icon: '\u25A0' },
+  { label: 'Sources', rel: 'sources', href: '/api/v1/sources', icon: '\u25C6' },
+  { label: 'Tiles',   rel: 'tiles',   href: '/api/v1/tiles',   icon: '\u25B2' },
+  { label: 'Tables',  rel: 'tables',  href: '/api/v1/tables',  icon: '\u25CF' },
+];
+
+const SINGLETONS = [
+  { label: 'Health', href: '/health',      icon: '\u2764' },
+  { label: 'Info',   href: '/api/v1/info', icon: '\u24D8' },
+];
+
+// ---------------------------------------------------------------------------
 // Explorer application
 // ---------------------------------------------------------------------------
 const Explorer = {
   state: { path: null, data: null, links: {} },
-  $content: null,
-  $nav: null,
+  treeState: {},  // href -> { expanded, items, count }
+  $tree: null,
+  $detail: null,
 
   init() {
-    this.$content = document.getElementById('content');
-    this.$nav = document.getElementById('nav-collections');
-
-    // Event delegation for navigation links
-    document.addEventListener('click', (e) => {
-      const a = e.target.closest('[data-navigate]');
-      if (a) { e.preventDefault(); this.navigate(a.dataset.navigate); }
-    });
-
-    this.discover();
+    this.$tree = document.getElementById('tree');
+    this.$detail = document.getElementById('detail');
+    this.renderTree();
+    this.navigate('/health');
   },
 
-  async discover() {
-    try {
-      const resp = await fetch('/health', { headers: { Accept: 'application/json' } });
-      const links = parseLinks(resp);
-      this.renderNav(links);
-      this.navigate('/health');
-    } catch (err) {
-      this.$content.innerHTML = '';
-      this.$content.appendChild(
-        el('div', { class: 'error' }, 'Failed to discover API: ' + err.message + '. Is the server running?')
-      );
+  // --- Tree sidebar ---
+  renderTree() {
+    this.$tree.innerHTML = '';
+
+    // Collections
+    for (const col of COLLECTIONS) {
+      const ts = this.treeState[col.href] || {};
+      const node = el('div', { class: 'tree-node' });
+
+      const row = el('div', { class: 'tree-row' + (this.state.path === col.href ? ' active' : '') });
+      const toggle = el('span', { class: 'tree-toggle' }, ts.expanded ? '\u25BC' : '\u25B6');
+      toggle.addEventListener('click', (e) => { e.stopPropagation(); this.toggleCollection(col); });
+      row.appendChild(toggle);
+      row.appendChild(el('span', { class: 'tree-icon' }, col.icon));
+      const label = el('span', { class: 'tree-label' }, col.label);
+      row.appendChild(label);
+      if (ts.count != null) row.appendChild(el('span', { class: 'tree-badge' }, String(ts.count)));
+      row.addEventListener('click', () => this.navigate(col.href));
+      node.appendChild(row);
+
+      // Expanded children
+      if (ts.expanded && ts.items) {
+        const children = el('div', { class: 'tree-children' });
+        for (const item of ts.items) {
+          const itemRow = el('div', {
+            class: 'tree-row tree-item' + (this.state.path === item.href ? ' active' : ''),
+          });
+          itemRow.appendChild(el('span', { class: 'tree-icon' }, '\u2022'));
+          itemRow.appendChild(el('span', { class: 'tree-label' }, item.label));
+          itemRow.addEventListener('click', () => this.navigate(item.href));
+          children.appendChild(itemRow);
+        }
+        if (ts.items.length === 0) {
+          children.appendChild(el('div', { class: 'tree-row tree-empty' }, 'No items'));
+        }
+        node.appendChild(children);
+      }
+
+      this.$tree.appendChild(node);
     }
+
+    // Divider
+    this.$tree.appendChild(el('div', { class: 'tree-divider' }));
+
+    // Singletons
+    for (const s of SINGLETONS) {
+      const row = el('div', { class: 'tree-row' + (this.state.path === s.href ? ' active' : '') });
+      row.appendChild(el('span', { class: 'tree-icon' }, s.icon));
+      row.appendChild(el('span', { class: 'tree-label' }, s.label));
+      row.addEventListener('click', () => this.navigate(s.href));
+      this.$tree.appendChild(row);
+    }
+
+    // External links
+    this.$tree.appendChild(el('div', { class: 'tree-divider' }));
+    const docsRow = el('a', { class: 'tree-row', href: '/docs', target: '_blank' });
+    docsRow.appendChild(el('span', { class: 'tree-icon' }, '\u2197' ));
+    docsRow.appendChild(el('span', { class: 'tree-label' }, 'API Docs'));
+    this.$tree.appendChild(docsRow);
   },
 
-  renderNav(links) {
-    this.$nav.innerHTML = '';
-    const label = el('div', { class: 'nav-label' }, 'Collections');
-    this.$nav.appendChild(label);
-
-    const entries = Object.entries(links)
-      .filter(([rel]) => relCategory(rel) !== 'meta' && relCategory(rel) !== 'page');
-
-    if (entries.length === 0) {
-      this.$nav.appendChild(el('div', { class: 'nav-label' }, 'No links discovered'));
+  async toggleCollection(col) {
+    const ts = this.treeState[col.href] || {};
+    if (ts.expanded) {
+      ts.expanded = false;
+      this.treeState[col.href] = ts;
+      this.renderTree();
       return;
     }
+    // Fetch items
+    ts.expanded = true;
+    ts.items = [];
+    this.treeState[col.href] = ts;
+    this.renderTree();
 
-    for (const [rel, items] of entries) {
-      for (const item of items) {
-        const a = el('a', { 'data-navigate': item.href, 'data-nav-href': item.href });
-        a.appendChild(text(rel + ' '));
-        a.appendChild(el('span', { class: 'rel-badge' }, rel));
-        this.$nav.appendChild(a);
-      }
-    }
+    try {
+      const resp = await fetch(col.href, { headers: { Accept: 'application/json' } });
+      if (!resp.ok) return;
+      const data = await resp.json();
+      const items = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
+      ts.count = data?.total ?? items.length;
+      ts.items = items.map(item => {
+        const id = item.id || item.name || item.filename || JSON.stringify(item).substring(0, 30);
+        return { label: String(id), href: col.href + '/' + encodeURIComponent(id), raw: item };
+      });
+      this.renderTree();
+    } catch { /* ignore */ }
   },
 
+  // --- Navigation ---
   async navigate(href) {
-    this.$content.innerHTML = '';
-    this.$content.appendChild(el('div', { class: 'loading' }, 'Loading...'));
     this.state.path = href;
+    this.renderTree(); // update active highlight
+    this.$detail.innerHTML = '';
+    this.$detail.appendChild(el('div', { class: 'loading' }, 'Loading...'));
 
     try {
       const resp = await fetch(href, { headers: { Accept: 'application/json' } });
@@ -332,268 +331,144 @@ const Explorer = {
       this.state.links = links;
 
       if (!resp.ok) {
-        this.$content.innerHTML = '';
-        this.$content.appendChild(el('div', { class: 'error' }, 'HTTP ' + resp.status + ': ' + resp.statusText));
+        this.$detail.innerHTML = '';
+        this.$detail.appendChild(el('div', { class: 'error' }, 'HTTP ' + resp.status + ': ' + resp.statusText));
         return;
       }
 
       const data = await resp.json();
       this.state.data = data;
-
-      // Detect paginated envelope
       const displayData = Array.isArray(data?.data) ? data.data : data;
       const isArray = Array.isArray(displayData);
-      const pathName = href.split('?')[0].split('/').filter(Boolean).pop() || 'API';
-      const countLabel = data?.total != null ? '(' + data.total + ' total)'
-                       : isArray ? '(' + displayData.length + ')' : '';
 
-      // Highlight active nav
-      document.querySelectorAll('#sidebar a').forEach(a => a.classList.remove('active'));
-      const basePath = href.split('?')[0];
-      const active = document.querySelector('#sidebar a[data-nav-href="' + basePath + '"]');
-      if (active) active.classList.add('active');
+      this.$detail.innerHTML = '';
 
-      // Build content
-      this.$content.innerHTML = '';
+      // Welcome panel on health page
+      if (href === '/health') {
+        const welcome = el('div', { class: 'panel welcome-panel' });
+        const wBody = el('div', { class: 'panel-body' });
+        wBody.appendChild(el('h2', { class: 'welcome-title' }, 'Welcome to the API Explorer'));
+        wBody.appendChild(el('p', { class: 'welcome-text' },
+          'Browse your geospatial data using the tree on the left. ' +
+          'Click a collection (Layers, Sources, Tiles, Tables) to expand it and see items inside. ' +
+          'Click any item to view its details, edit it, or run actions like Publish or Delete.'));
+        const tips = el('div', { class: 'welcome-tips' });
+        tips.appendChild(el('div', null, '\u25B6  Click a collection name to expand it'));
+        tips.appendChild(el('div', null, '\u2022  Click an item to see its properties'));
+        tips.appendChild(el('div', null, '\u270E  Use action buttons to create, edit, or delete'));
+        tips.appendChild(el('div', null, '\u25B8  Raw JSON and Link Headers are available at the bottom of each page'));
+        wBody.appendChild(tips);
+        welcome.appendChild(wBody);
+        this.$detail.appendChild(welcome);
+      }
 
-      // Discovery banner — explains what just happened
-      const totalLinks = Object.values(links).reduce((n, arr) => n + arr.length, 0);
-      const relCount = Object.keys(links).length;
-      this.$content.appendChild(this.buildDiscoveryBanner(href, totalLinks, relCount));
+      // Breadcrumb
+      this.$detail.appendChild(this.buildBreadcrumb(href));
 
-      this.$content.appendChild(this.buildBreadcrumb(href));
+      // Actions
+      const actionsBar = this.buildActions(links);
+      if (actionsBar.childNodes.length > 0) {
+        const actionsPanel = el('div', { class: 'panel actions-panel' });
+        actionsPanel.appendChild(actionsBar);
+        this.$detail.appendChild(actionsPanel);
+      }
 
-      // Mesh graph — shows the hypermedia link topology
-      this.$content.appendChild(this.buildMeshPanel(links, href));
-
-      // Main data panel
+      // Data panel
       const panel = el('div', { class: 'panel' });
       const header = el('div', { class: 'panel-header' });
-      header.appendChild(el('h2', null, pathName + ' ' + countLabel));
-      header.appendChild(this.buildActions(links));
+      const title = this.friendlyTitle(href);
+      const count = data?.total != null ? data.total : (isArray ? displayData.length : null);
+      header.appendChild(el('h2', null, title + (count != null ? ' (' + count + ')' : '')));
       panel.appendChild(header);
 
       const body = el('div', { class: 'panel-body' });
       body.appendChild(isArray ? this.buildTable(displayData) : this.buildDetail(displayData));
       body.appendChild(this.buildPagination(links));
       panel.appendChild(body);
-      this.$content.appendChild(panel);
+      this.$detail.appendChild(panel);
 
-      // Links panel
-      this.$content.appendChild(this.buildLinksPanel(links));
+      // Related resources (sub-collections from links)
+      const related = this.buildRelated(links);
+      if (related) this.$detail.appendChild(related);
 
-      // Raw JSON panel
-      this.$content.appendChild(this.buildRawPanel(data));
+      // Collapsible: Raw JSON
+      this.$detail.appendChild(this.buildCollapsible('Raw JSON', el('pre', { class: 'raw-json' }, JSON.stringify(data, null, 2))));
+
+      // Collapsible: Link Headers
+      const linkEntries = Object.entries(links).flatMap(([rel, items]) =>
+        items.map(item => ({ rel, ...item }))
+      );
+      if (linkEntries.length > 0) {
+        const linkList = el('div', { class: 'link-list' });
+        for (const e of linkEntries) {
+          const row = el('div', { class: 'link-row' });
+          row.appendChild(el('span', { class: 'link-rel' }, e.rel));
+          if (e.method) row.appendChild(el('span', { class: 'link-method' }, e.method));
+          const a = el('a', { class: 'link-href' });
+          a.textContent = e.title || e.href;
+          a.addEventListener('click', () => this.navigate(e.href));
+          row.appendChild(a);
+          linkList.appendChild(row);
+        }
+        this.$detail.appendChild(this.buildCollapsible('Link Headers (' + linkEntries.length + ')', linkList));
+      }
 
     } catch (err) {
-      this.$content.innerHTML = '';
-      this.$content.appendChild(el('div', { class: 'error' }, 'Error: ' + err.message));
+      this.$detail.innerHTML = '';
+      this.$detail.appendChild(el('div', { class: 'error' }, 'Error: ' + err.message));
     }
   },
 
-  // --- Mesh graph ---
-  buildMeshPanel(links, currentHref) {
-    const panel = el('div', { class: 'panel' });
-    const header = el('div', { class: 'panel-header' });
-    header.appendChild(el('h2', null, 'Hypermedia Mesh'));
-    panel.appendChild(header);
-
-    const mesh = el('div', { class: 'mesh' });
-
-    // Classify links into spatial zones
-    const upNodes = [];    // up, collection
-    const downNodes = [];  // item
-    const leftNodes = [];  // sibling collections (first half)
-    const rightNodes = []; // sibling collections (second half)
-    const actions = [];    // method-bearing rels (badges on current node)
-
-    for (const [rel, items] of Object.entries(links)) {
-      const cat = relCategory(rel);
-      if (cat === 'page' || cat === 'meta') continue;
-      if (rel === 'self') continue;
-
-      for (const item of items) {
-        if (rel === 'up' || rel === 'collection') {
-          upNodes.push({ rel, href: item.href, label: this._nodeLabel(item.href) });
-        } else if (rel === 'item') {
-          downNodes.push({ rel, href: item.href, label: this._nodeLabel(item.href) });
-        } else if (item.method) {
-          actions.push({ rel, href: item.href, method: item.method, title: item.title, schema: item.schema });
-        } else {
-          // Sibling — navigable, no method
-          const arr = leftNodes.length <= rightNodes.length ? leftNodes : rightNodes;
-          arr.push({ rel, href: item.href, label: this._nodeLabel(item.href) });
-        }
-      }
-    }
-
-    // Up zone
-    const upZone = el('div', { class: 'mesh-up' });
-    for (const n of upNodes) {
-      upZone.appendChild(this._meshNode(n.href, n.label, n.rel, false));
-    }
-    if (upNodes.length > 0) {
-      upZone.appendChild(el('div', { class: 'mesh-arrow' }, '\u2193'));
-    }
-    mesh.appendChild(upZone);
-
-    // Left zone
-    const leftZone = el('div', { class: 'mesh-left' });
-    for (const n of leftNodes) {
-      leftZone.appendChild(this._meshNode(n.href, n.label, n.rel, false));
-    }
-    if (leftNodes.length > 0) {
-      leftZone.appendChild(el('div', { class: 'mesh-arrow' }, '\u2192'));
-    }
-    mesh.appendChild(leftZone);
-
-    // Center: current node
-    const centerZone = el('div', { class: 'mesh-center' });
-    const currentNode = el('div', { class: 'mesh-node current' });
-    currentNode.appendChild(el('div', { class: 'mesh-node-label' }, this._nodeLabel(currentHref)));
-    currentNode.appendChild(el('div', { class: 'mesh-node-path' }, currentHref.split('?')[0]));
-
-    // Action badges on current node
-    if (actions.length > 0 || links['create-form'] || links['edit'] || links['edit-form']) {
-      const badgeBar = el('div', { class: 'mesh-node-actions' });
-      if (links['create-form']) {
-        const b = el('button', { class: 'mesh-action-badge create' }, '+ Add');
-        b.addEventListener('click', (e) => { e.stopPropagation(); this.showCreateForm(); });
-        badgeBar.appendChild(b);
-      }
-      if (links['edit'] || links['edit-form']) {
-        const b = el('button', { class: 'mesh-action-badge edit' }, 'Edit');
-        b.addEventListener('click', (e) => { e.stopPropagation(); this.showEditForm(); });
-        badgeBar.appendChild(b);
-      }
-      for (const a of actions) {
-        const label = a.title || a.rel;
-        const cls = a.method === 'DELETE' ? 'mesh-action-badge delete' : 'mesh-action-badge default';
-        const b = el('button', { class: cls }, label);
-        b.addEventListener('click', (e) => {
-          e.stopPropagation();
-          this.executeAction(a.href, a.method, label, a.schema);
-        });
-        badgeBar.appendChild(b);
-      }
-      currentNode.appendChild(badgeBar);
-    }
-    centerZone.appendChild(currentNode);
-    mesh.appendChild(centerZone);
-
-    // Right zone
-    const rightZone = el('div', { class: 'mesh-right' });
-    if (rightNodes.length > 0) {
-      rightZone.appendChild(el('div', { class: 'mesh-arrow' }, '\u2190'));
-    }
-    for (const n of rightNodes) {
-      rightZone.appendChild(this._meshNode(n.href, n.label, n.rel, false));
-    }
-    mesh.appendChild(rightZone);
-
-    // Down zone
-    const downZone = el('div', { class: 'mesh-down' });
-    if (downNodes.length > 0) {
-      downZone.appendChild(el('div', { class: 'mesh-arrow' }, '\u2193'));
-    }
-    for (const n of downNodes) {
-      downZone.appendChild(this._meshNode(n.href, n.label, n.rel, false));
-    }
-    mesh.appendChild(downZone);
-
-    panel.appendChild(mesh);
-
-    // Contextual hint
-    const hint = el('div', { class: 'mesh-hint' });
-    hint.appendChild(text('Click any node to navigate. The mesh redraws from the new resource\u2019s Link headers. '));
-    hint.appendChild(el('strong', null, '\u2191'));
-    hint.appendChild(text(' parent \u00B7 '));
-    hint.appendChild(el('strong', null, '\u2190\u2192'));
-    hint.appendChild(text(' siblings \u00B7 '));
-    hint.appendChild(el('strong', null, '\u2193'));
-    hint.appendChild(text(' children \u00B7 badges = actions'));
-    panel.appendChild(hint);
-
-    return panel;
-  },
-
-  _meshNode(href, label, rel, isCurrent) {
-    const node = el('div', {
-      class: 'mesh-node' + (isCurrent ? ' current' : ''),
-      'data-navigate': href,
-    });
-    node.appendChild(el('div', { class: 'mesh-node-label' }, label));
-    node.appendChild(el('div', { class: 'mesh-node-rel' }, rel));
-    return node;
-  },
-
-  _nodeLabel(href) {
-    const path = href.split('?')[0];
-    const segs = path.split('/').filter(Boolean);
-    return segs[segs.length - 1] || '/';
-  },
-
-  // --- Discovery banner ---
-  buildDiscoveryBanner(href, totalLinks, relCount) {
-    const banner = el('div', { class: 'discovery-banner' });
-    banner.appendChild(el('span', { class: 'banner-icon' }, '\u{1F517}'));
-    const msg = el('span');
-    msg.appendChild(text('Fetched '));
-    msg.appendChild(el('code', null, href));
-    msg.appendChild(text(' \u2192 discovered '));
-    msg.appendChild(el('strong', null, totalLinks + ' links'));
-    msg.appendChild(text(' across ' + relCount + ' IANA rels. '));
-    msg.appendChild(text('Every link below came from RFC 8288 Link headers \u2014 no hardcoded URLs.'));
-    banner.appendChild(msg);
-    return banner;
+  friendlyTitle(href) {
+    const segs = href.split('?')[0].split('/').filter(Boolean);
+    return segs[segs.length - 1] || 'API';
   },
 
   // --- Breadcrumb ---
   buildBreadcrumb(href) {
     const nav = el('div', { class: 'breadcrumb' });
-    nav.appendChild(el('a', { 'data-navigate': '/health' }, 'API'));
+    const homeLink = el('a');
+    homeLink.textContent = 'API';
+    homeLink.addEventListener('click', () => this.navigate('/health'));
+    nav.appendChild(homeLink);
+
     const parts = href.split('?')[0].split('/').filter(Boolean);
     let built = '';
     for (const part of parts) {
       built += '/' + part;
-      nav.appendChild(el('span', null, ' \u203A '));
-      nav.appendChild(el('a', { 'data-navigate': built }, part));
+      nav.appendChild(el('span', { class: 'sep' }, ' / '));
+      const a = el('a');
+      a.textContent = part;
+      const target = built;
+      a.addEventListener('click', () => this.navigate(target));
+      nav.appendChild(a);
     }
     return nav;
   },
 
-  // --- Actions toolbar ---
+  // --- Actions ---
   buildActions(links) {
     const bar = el('div', { class: 'actions' });
 
-    // Navigation rels
-    for (const rel of ['up', 'collection']) {
-      if (!links[rel]) continue;
-      const cfg = REL_CONFIG[rel];
-      const btn = el('button', { class: 'btn btn-sm', 'data-navigate': links[rel][0].href }, cfg.label);
-      bar.appendChild(btn);
-    }
-
-    // Standard form rels
     if (links['create-form']) {
-      const btn = el('button', { class: 'btn btn-primary btn-sm' }, '+ Add New');
+      const btn = el('button', { class: 'btn btn-primary' }, '+ New');
       btn.addEventListener('click', () => this.showCreateForm());
       bar.appendChild(btn);
     }
     if (links['edit'] || links['edit-form']) {
-      const btn = el('button', { class: 'btn btn-primary btn-sm' }, 'Edit');
+      const btn = el('button', { class: 'btn btn-primary' }, 'Edit');
       btn.addEventListener('click', () => this.showEditForm());
       bar.appendChild(btn);
     }
 
-    // State-dependent action buttons (method-bearing links not handled above)
-    const handled = new Set(['up', 'collection', 'create-form', 'edit-form', 'edit']);
+    const skip = new Set(['self', 'up', 'collection', 'create-form', 'edit-form', 'edit',
+      'item', 'first', 'prev', 'next', 'last', 'search', 'describedby', 'service-desc', 'service-doc']);
     for (const [rel, items] of Object.entries(links)) {
-      if (handled.has(rel) || relCategory(rel) === 'meta' || relCategory(rel) === 'page' || rel === 'self' || rel === 'item') continue;
+      if (skip.has(rel)) continue;
       for (const item of items) {
         if (!item.method) continue;
         const label = item.title || rel;
-        const cls = item.method === 'DELETE' ? 'btn btn-danger btn-sm' : 'btn btn-primary btn-sm';
+        const cls = item.method === 'DELETE' ? 'btn btn-danger' : 'btn btn-action';
         const btn = el('button', { class: cls }, label);
         btn.addEventListener('click', () => this.executeAction(item.href, item.method, label, item.schema));
         bar.appendChild(btn);
@@ -603,9 +478,9 @@ const Explorer = {
     return bar;
   },
 
-  // --- Data table ---
+  // --- Table ---
   buildTable(data) {
-    if (!Array.isArray(data) || data.length === 0) return el('p', { class: 'loading' }, 'No items.');
+    if (!Array.isArray(data) || data.length === 0) return el('p', { class: 'empty' }, 'No items.');
     const keys = Object.keys(data[0]);
     const table = el('table');
     const thead = el('thead');
@@ -617,37 +492,97 @@ const Explorer = {
     const tbody = el('tbody');
     for (const row of data) {
       const tr = el('tr');
+      const id = row.id || row.name || row.filename;
+      const basePath = this.state.path.split('?')[0];
+      const itemHref = id ? basePath + '/' + encodeURIComponent(id) : null;
+      if (itemHref) tr.classList.add('clickable');
+
       for (const k of keys) {
         const v = row[k];
         const td = el('td');
-        if (typeof v === 'object' && v !== null) {
+        if (k === 'id' || k === 'name' || k === 'filename') {
+          if (itemHref) {
+            const a = el('a');
+            a.textContent = String(v ?? '');
+            a.addEventListener('click', (e) => { e.stopPropagation(); this.navigate(itemHref); });
+            td.appendChild(a);
+          } else {
+            td.textContent = String(v ?? '');
+          }
+        } else if (typeof v === 'object' && v !== null) {
           td.textContent = JSON.stringify(v);
         } else {
           td.textContent = String(v ?? '');
         }
         tr.appendChild(td);
       }
+      if (itemHref) tr.addEventListener('click', () => this.navigate(itemHref));
       tbody.appendChild(tr);
     }
     table.appendChild(tbody);
     return table;
   },
 
-  // --- Detail view ---
+  // --- Detail ---
   buildDetail(data) {
-    if (typeof data !== 'object' || data === null) {
-      return el('pre', null, JSON.stringify(data, null, 2));
-    }
-    if (Array.isArray(data)) return this.buildTable(data);
-
+    if (typeof data !== 'object' || data === null) return el('pre', null, JSON.stringify(data, null, 2));
     const grid = el('div', { class: 'detail-grid' });
     for (const [k, v] of Object.entries(data)) {
       grid.appendChild(el('div', { class: 'detail-key' }, k));
       const val = el('div', { class: 'detail-value' });
-      val.textContent = typeof v === 'object' ? JSON.stringify(v) : String(v);
+      if (k.toLowerCase().includes('color') && typeof v === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(v)) {
+        const swatch = el('span', { class: 'color-swatch' });
+        swatch.style.backgroundColor = v;
+        val.appendChild(swatch);
+        val.appendChild(document.createTextNode(' ' + v));
+      } else if (typeof v === 'boolean') {
+        val.textContent = v ? 'Yes' : 'No';
+      } else if (typeof v === 'object') {
+        val.textContent = JSON.stringify(v);
+      } else {
+        val.textContent = String(v);
+      }
       grid.appendChild(val);
     }
     return grid;
+  },
+
+  // --- Related resources ---
+  buildRelated(links) {
+    const related = [];
+    const itemCount = links.item ? links.item.length : 0;
+    if (itemCount > 0) related.push({ label: 'Items (' + itemCount + ')', href: null });
+
+    // Sub-resources from links (e.g. styles)
+    const skip = new Set(['self', 'up', 'collection', 'create-form', 'edit-form', 'edit',
+      'item', 'first', 'prev', 'next', 'last', 'search', 'describedby', 'service-desc', 'service-doc']);
+    for (const [rel, items] of Object.entries(links)) {
+      if (skip.has(rel)) continue;
+      for (const item of items) {
+        if (item.method) continue; // actions, not sub-resources
+        related.push({ label: item.title || rel, href: item.href });
+      }
+    }
+
+    if (related.length === 0) return null;
+
+    const panel = el('div', { class: 'panel' });
+    const header = el('div', { class: 'panel-header' });
+    header.appendChild(el('h2', null, 'Related'));
+    panel.appendChild(header);
+    const body = el('div', { class: 'panel-body' });
+    for (const r of related) {
+      if (r.href) {
+        const a = el('a', { class: 'related-link' });
+        a.textContent = '\u2192 ' + r.label;
+        a.addEventListener('click', () => this.navigate(r.href));
+        body.appendChild(a);
+      } else {
+        body.appendChild(el('div', { class: 'related-info' }, r.label));
+      }
+    }
+    panel.appendChild(body);
+    return panel;
   },
 
   // --- Pagination ---
@@ -655,10 +590,12 @@ const Explorer = {
     const container = el('div', { class: 'pagination' });
     const has = ['first', 'prev', 'next', 'last'].some(r => links[r]);
     if (!has) return container;
-
     for (const [rel, label] of [['first', '\u00AB First'], ['prev', '\u2039 Prev'], ['next', 'Next \u203A'], ['last', 'Last \u00BB']]) {
       if (links[rel]) {
-        container.appendChild(el('button', { class: 'btn btn-sm', 'data-navigate': links[rel][0].href }, label));
+        const btn = el('button', { class: 'btn btn-sm' });
+        btn.textContent = label;
+        btn.addEventListener('click', () => this.navigate(links[rel][0].href));
+        container.appendChild(btn);
       } else {
         container.appendChild(el('button', { class: 'btn btn-sm', disabled: true }, label));
       }
@@ -666,53 +603,23 @@ const Explorer = {
     return container;
   },
 
-  // --- Links panel ---
-  buildLinksPanel(links) {
-    const entries = Object.entries(links).flatMap(([rel, items]) =>
-      items.map(item => ({ rel, href: item.href, method: item.method, title: item.title }))
-    );
-    if (entries.length === 0) return document.createDocumentFragment();
-
-    const panel = el('div', { class: 'panel' });
-    const header = el('div', { class: 'panel-header' });
-    header.appendChild(el('h2', null, 'Link Relations (RFC 8288)'));
-    header.appendChild(el('span', { class: 'mesh-hint' }, entries.length + ' links from response headers'));
-    panel.appendChild(header);
-
-    const body = el('div', { class: 'panel-body' });
-    const ul = el('ul', { class: 'link-list' });
-
-    for (const e of entries) {
-      const li = el('li');
-      li.appendChild(el('span', { class: 'rel-tag ' + relCSSClass(e.rel) }, e.rel));
-      if (e.method) li.appendChild(el('span', { class: 'rel-badge' }, e.method));
-      const href = el('span', { class: 'link-href' });
-      href.appendChild(el('a', { 'data-navigate': e.href }, e.title || e.href));
-      li.appendChild(href);
-      ul.appendChild(li);
-    }
-
-    body.appendChild(ul);
-    panel.appendChild(body);
-    return panel;
-  },
-
-  // --- Raw JSON panel ---
-  buildRawPanel(data) {
-    const panel = el('div', { class: 'panel' });
-    const header = el('div', { class: 'panel-header' });
-    header.appendChild(el('h2', null, 'Raw Response'));
-    const toggleBtn = el('button', { class: 'btn btn-sm' }, 'Toggle JSON');
-    toggleBtn.addEventListener('click', () => {
-      rawDiv.classList.toggle('visible');
+  // --- Collapsible section ---
+  buildCollapsible(title, content) {
+    const wrapper = el('div', { class: 'collapsible' });
+    const toggle = el('div', { class: 'collapsible-toggle' });
+    toggle.appendChild(el('span', { class: 'collapsible-arrow' }, '\u25B6'));
+    toggle.appendChild(el('span', null, title));
+    const body = el('div', { class: 'collapsible-body' });
+    body.style.display = 'none';
+    body.appendChild(content);
+    toggle.addEventListener('click', () => {
+      const open = body.style.display !== 'none';
+      body.style.display = open ? 'none' : 'block';
+      toggle.querySelector('.collapsible-arrow').textContent = open ? '\u25B6' : '\u25BC';
     });
-    header.appendChild(toggleBtn);
-    panel.appendChild(header);
-
-    const rawDiv = el('div', { class: 'raw-json' });
-    rawDiv.textContent = JSON.stringify(data, null, 2);
-    panel.appendChild(rawDiv);
-    return panel;
+    wrapper.appendChild(toggle);
+    wrapper.appendChild(body);
+    return wrapper;
   },
 
   // --- Form actions ---
@@ -736,8 +643,7 @@ const Explorer = {
 
   async showEditForm() {
     const basePath = this.state.path.split('?')[0];
-    const schema = await resolveSchema(basePath, 'PUT', null)
-                || await resolveSchema(basePath, 'PATCH', null);
+    const schema = await resolveSchema(basePath, 'PUT', null) || await resolveSchema(basePath, 'PATCH', null);
     if (!schema) { alert('No PUT/PATCH schema found for ' + basePath); return; }
     showFormModal('Edit', schema, this.state.data || {}, async (formData) => {
       const resp = await fetch(basePath, {
@@ -784,5 +690,4 @@ const Explorer = {
   },
 };
 
-// Boot
 document.addEventListener('DOMContentLoaded', () => Explorer.init());

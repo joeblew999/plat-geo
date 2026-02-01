@@ -1,0 +1,20 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "Washington Monument", "type": "landmark" },
+      "geometry": { "type": "Point", "coordinates": [-77.0353, 38.8895] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Lincoln Memorial", "type": "landmark" },
+      "geometry": { "type": "Point", "coordinates": [-77.0502, 38.8893] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Capitol Building", "type": "landmark" },
+      "geometry": { "type": "Point", "coordinates": [-77.0091, 38.8899] }
+    }
+  ]
+}

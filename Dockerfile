@@ -11,9 +11,12 @@ FROM debian:trixie-slim
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
 COPY --from=build /geo /usr/local/bin/geo
 COPY web/ /app/web/
+COPY seed/ /app/seed/
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
 WORKDIR /app
 ENV SERVICE_PORT=8080
 ENV SERVICE_WEB_DIR=/app/web
 ENV SERVICE_DATA_DIR=/data
 EXPOSE 8080
-CMD ["geo"]
+ENTRYPOINT ["/app/entrypoint.sh"]
