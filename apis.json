@@ -1,0 +1,9 @@
+{
+  "$schema": "https://rest.sh/schemas/apis.json",
+  "geo": {
+    "base": "http://localhost:8086",
+    "spec_files": [
+      "http://localhost:8086/openapi.json"
+    ]
+  }
+}
